@@ -1,3 +1,5 @@
+library(brms)
+
 # sample of a mixture model of log normal distribution and multinomial classes
 
 samples = rlnorm(1000, sdlog = 0.8) - 1
@@ -19,6 +21,10 @@ trains_va = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Vö/trains.fst")
 trains_va = trains_va %>% filter(!is.na(ArrivalDelay))
 # filter out trains going to Alvesta (alvesta in ViaToLocation)
 trains_va = trains_va %>% filter(!str_detect(ViaToLocation, "Av"))
+trains_va = trains_va %>% mutate(trainID = paste0(AdvertisedTrainIdent, Date))
 
 mean((trains_va$ArrivalDelay))
 hist(as.numeric(trains_va$ArrivalDelay), breaks = 50, main = "Histogram of arrivals in Växjö")
+
+# trying out shifted log-normal
+hist(rshifted_lnorm(1000, meanlog = 0, sdlog = 0.95, shift = -0.75), breaks = 50)
