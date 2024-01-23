@@ -16,7 +16,7 @@ connections_av_from_lp = connections_av %>% filter((arr.line.group == 6 & arr.di
 connections_av_from_lp = connections_av_from_lp %>% filter(str_detect(dep.gtfs.locations, "VÖ") & dep.direction == 2)
 connections_av_from_lp = connections_av_from_lp %>% mutate(dep.trainID = paste0(dep.AdvertisedTrainIdent, dep.Date))
 
-ggplot(connections_av_from_lp, aes(x=arr.Operator)) + geom_bar()
+ggplot(connections_av_from_lp, aes(x=dep.Operator)) + geom_bar()
 hist(as.numeric(connections_av_from_lp$arr.ArrivalDelay))
 mean(connections_av_from_lp$arr.ArrivalDelay)
 
