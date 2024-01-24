@@ -49,5 +49,5 @@ connected_trains$actualArrivalDelay = ifelse(!is.na(connected_trains$Reached.1) 
 # use summarise to get the arrival time of each day and then visualise it
 delays = connected_trains %>% summarise(min(na.omit(actualArrivalDelay))) %>% rename(arrivalDelay = "min(na.omit(actualArrivalDelay))")
 ggplot(delays) + geom_density(aes(x=arrivalDelay)) + ggtitle("Density plot of arrival delay")
-hist(delays$arrivalDelay, breaks = 10)
+hist(delays$arrivalDelay, breaks = 20)
 
