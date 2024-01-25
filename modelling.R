@@ -27,4 +27,4 @@ mean((trains_va$ArrivalDelay))
 hist(as.numeric(trains_va$ArrivalDelay), breaks = 50, main = "Histogram of arrivals in Växjö")
 
 # trying out shifted log-normal
-hist(rshifted_lnorm(1000, meanlog = 0, sdlog = 0.95, shift = -0.75), breaks = 50)
+hist(rshifted_lnorm(1000, meanlog = 0, sdlog = 0.9, shift = 29.75), breaks = 50)

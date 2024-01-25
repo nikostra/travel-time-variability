@@ -16,7 +16,7 @@ trains_va = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Vö/trains.fst")
 trains_va = trains_va %>% filter(!is.na(ArrivalDelay))
 # filter out trains going to Alvesta (alvesta in ViaToLocation)
 trains_va = trains_va %>% filter(!str_detect(ViaToLocation, "Av")) %>% arrange(PlannedArrival)
-trains_va = trains_va %>% mutate(trainID = paste0(AdvertisedTrainIdent, Date)) %>% select(trainID, ArrivalDelay, PlannedArrivalTime)
+trains_va = trains_va %>% mutate(trainID = paste0(AdvertisedTrainIdent, Date)) %>% dplyr::select(trainID, ArrivalDelay, PlannedArrivalTime)
 
 
 ### Instead model density for ALL connections
