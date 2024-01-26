@@ -5,6 +5,7 @@ library(fst)
 library(tidyverse)
 library(readr)
 library(ggplot2)
+library(EnvStats)
 
 connections_av = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Av/connections.fst")
 # leave in only trains with Linköping in their route
@@ -86,7 +87,6 @@ res1_1
 res1_2 = fitdistr(transfer1,dshifted_lnorm,start=list(meanlog = 1, sdlog = 1, shift = location1), method="BFGS")
 res1_2
 
-# turn around mean and sd here to "pass" ks test!!!
 sample1_1 = rshifted_lnorm(1000, meanlog = res1_2$estimate[1], sdlog = (res1_2$estimate[2]), shift = res1_2$estimate[3])
 sample1_2 = rlnorm3(1000, shape = res1_2$estimate[1], scale = (res1_2$estimate[2]), thres = res1_2$estimate[3])
 
@@ -116,10 +116,12 @@ qqplot(transfer2,quantiles2)
 abline(0, 1, col = "red")
 
 
-test_sample = rshifted_lnorm(100, meanlog = 0, sdlog = 1.5, shift = 10)
-hist(test_sample)
-restest = fitdistr(test_sample,dshifted_lnorm,start=list(meanlog = 1, sdlog = 1, shift = -5), method="BFGS")
-restest
+library(fitdistrplus)
+# Test for truncated normal distribution
+res = fitdist(transfer1, "normTrunc", start = list(mean = mean(transfer1), sd = 10, min = min(transfer1) - 1, max = Inf),
+               method="mle")
+
+
 
 # use summarise to get the arrival time of each day and then visualise it
 delays = connected_trains %>% summarise(min(na.omit(actualArrivalDelay))) %>% rename(arrivalDelay = "min(na.omit(actualArrivalDelay))")

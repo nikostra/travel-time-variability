@@ -1,4 +1,6 @@
 library(brms)
+library(FAdist)
+library(MASS)
 
 # sample of a mixture model of log normal distribution and multinomial classes
 
@@ -28,3 +30,26 @@ hist(as.numeric(trains_va$ArrivalDelay), breaks = 50, main = "Histogram of arriv
 
 # trying out shifted log-normal
 hist(rshifted_lnorm(1000, meanlog = 0, sdlog = 0.9, shift = 29.75), breaks = 50)
+
+
+# trying this data to fit a 3 parameter log normal
+delays = as.numeric(trains_va$ArrivalDelay)
+res = fitdistr(delays,dshifted_lnorm,start=list(meanlog = 1, sdlog = 1, shift = min(delays) - 0.01), method="BFGS")
+res
+
+
+sample1 = rshifted_lnorm(10000, meanlog = res$estimate[1], sdlog = (res$estimate[2]), shift = res$estimate[3])
+hist(sample1)
+ks.test(delays, sample1)
+
+quantiles <- qshifted_lnorm(ppoints(delays), meanlog = res$estimate[1], sdlog = (res$estimate[2]), shift = res$estimate[3])
+qqplot(delays,quantiles, main="QQ Plot delays vs lognormal")
+abline(0, 1, col = "red")
+
+delays
+quantiles
+
+sample1 = rshifted_lnorm(1000, meanlog = res$estimate[1], sdlog = (res$estimate[2]), shift = res$estimate[3])
+quantiles <- qshifted_lnorm(ppoints(sample1), meanlog = res$estimate[1], sdlog = (res$estimate[2]), shift = res$estimate[3])
+qqplot(sample1,quantiles)
+abline(0, 1, col = "red")
