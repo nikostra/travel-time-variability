@@ -126,5 +126,5 @@ res = fitdist(transfer1, "normTrunc", start = list(mean = mean(transfer1), sd = 
 # use summarise to get the arrival time of each day and then visualise it
 delays = connected_trains %>% summarise(min(na.omit(actualArrivalDelay))) %>% rename(arrivalDelay = "min(na.omit(actualArrivalDelay))")
 ggplot(delays) + geom_density(aes(x=arrivalDelay)) + ggtitle("Density plot of arrival delay")
-hist(delays$arrivalDelay, breaks = 20)
-
+hist(delays$arrivalDelay, breaks = 20, main="Histogram of arrival delay", xlab= "Arrival delay")
+ggplot(delays) + geom_histogram(aes(x=arrivalDelay), bins = 10) + ggtitle("Histogram of arrival delay")
