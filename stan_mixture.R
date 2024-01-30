@@ -25,7 +25,7 @@ parameters {
 model {
   sigma2[1] ~ scaled_inv_chi_square(1,2);    // Scaled-inv-chi2 with nu 1, sigma 2
   target += normal_lpdf(sigma2[2] | .3, .2)  // different prior for sigma2[2] weil hier sigma sehr klein sein sollte
-    - normal_lccdf(0 | .5, .3);
+    - normal_lccdf(0 | .3, .2);
   mu ~ normal(0, 100);
   p_transfer ~ beta(8, 2);                // Prior for probability, informative prior so that prob is close to 1 -> most transfers are reached
 
