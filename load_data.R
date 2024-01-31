@@ -49,7 +49,7 @@ load_delays_simple = function(){
   connected_trains$actualArrivalDelay = ifelse(!is.na(connected_trains$Reached.1) & connected_trains$Reached.1, connected_trains$actualArrivalDelay, 
                                                ifelse(connected_trains$Reached.2, connected_trains$actualArrivalDelay, NA))
   
-  delays = connected_trains %>% summarise(min(na.omit(actualArrivalDelay))) %>% rename(arrivalDelay = "min(na.omit(actualArrivalDelay))")
+  delays = connected_trains %>% summarise(min(na.omit(actualArrivalDelay))) %>% rename(actualArrivalDelay = "min(na.omit(actualArrivalDelay))")
   
   return(delays)
 }
@@ -73,36 +73,49 @@ load_delays_all = function(){
   trains_va = trains_va %>% filter(!is.na(ArrivalDelay))
   # filter out trains going to Alvesta (alvesta in ViaToLocation)
   trains_va = trains_va %>% filter(!str_detect(ViaToLocation, "Av")) %>% arrange(PlannedArrival)
+  # add ID as combination of train Nr and date
   trains_va = trains_va %>% mutate(trainID = paste0(AdvertisedTrainIdent, Date)) %>% dplyr::select(trainID, ArrivalDelay, PlannedArrivalTime)
   
   
-  ### Instead model density for ALL connections
+  #group trains in alvesta and add row number in group to model which train was reached
   grouped_arrivals <- connections_av_from_lp %>% arrange(dep.PlannedDepartureTime) %>% 
     select(arr.ActivityId, Reached, PlannedTransferTime, dep.trainID, ActualTransferTime, arr.Date, 
            arr.PlannedArrivalTime, dep.PlannedDepartureTime, arr.Weekday, arr.TimeOfDay) %>% 
     group_by(arr.ActivityId) %>% 
     mutate(reached_number = row_number())
   
+  # expand from the reached number to a wider boolean format
   reshaped_data <- grouped_arrivals %>% mutate(nr_reached = reached_number) %>% 
     pivot_wider(names_from = reached_number, values_from = Reached, names_prefix = "Reached.")
   
+  # join trains in växjö with connections from alvesta by ID
   connected_trains = reshaped_data %>% left_join(trains_va,join_by(dep.trainID == trainID))
-  connected_trains = connected_trains %>% filter(!is.na(ArrivalDelay)) %>% arrange(arr.Date, arr.PlannedArrivalTime)
-  
+
+  # group by ID of the arriving train in Alvesta and add a column as the scheduled arrival time of that train
   connected_trains = connected_trains %>% group_by(arr.ActivityId) %>% mutate(groupScheduledArrivalTime = min(PlannedArrivalTime))
+  #  filter out observations where arrival delay is missing and arrange rest by date and time so that reached numbers line up
+  connected_trains = connected_trains %>% filter(!any(is.na(ArrivalDelay))) %>% arrange(arr.Date, arr.PlannedArrivalTime)
+  # compute actual arrival delay of each observation as difference between scheduled arrival time of the group and the actual arrival time
   connected_trains = connected_trains %>% mutate(actualArrivalDelay = as.numeric(ArrivalDelay) + 
                                                    as.numeric(difftime(as.POSIXct(PlannedArrivalTime,format="%H:%M"),
                                                                        as.POSIXct(groupScheduledArrivalTime,format="%H:%M"), units = "mins")))
   
+  # save for each row either NA if transfer was not reached or the arrival delay
   connected_trains$actualArrivalDelay = ifelse(!is.na(connected_trains$Reached.1) & connected_trains$Reached.1, connected_trains$actualArrivalDelay, 
                                                ifelse(!is.na(connected_trains$Reached.2) & connected_trains$Reached.2, connected_trains$actualArrivalDelay,
                                                       ifelse(!is.na(connected_trains$Reached.3) & connected_trains$Reached.3, connected_trains$actualArrivalDelay,
                                                              ifelse(!is.na(connected_trains$Reached.4) & connected_trains$Reached.4, connected_trains$actualArrivalDelay,NA))))
+  # compute the planned transfer time of each group
+  plannedTransferTime = connected_trains %>% group_by(arr.ActivityId) %>% 
+    slice_min(PlannedTransferTime) %>% select(arr.ActivityId, PlannedTransferTime)
   
+  # select the minimum actual arrival delay of each group as the transfer that "made it" for that group and select explaining variables
   delays = connected_trains %>% slice_min(actualArrivalDelay) %>% filter(!is.na(actualArrivalDelay)) %>% 
-    ungroup() %>% select(actualArrivalDelay, arr.Weekday, arr.TimeOfDay, PlannedTransferTime, nr_reached)
+    ungroup() %>% left_join(plannedTransferTime, by="arr.ActivityId") %>% select(actualArrivalDelay, arr.Weekday, arr.TimeOfDay, nr_reached, PlannedTransferTime.y)
   
-  delays$PlannedTransferTime = as.numeric(delays$PlannedTransferTime)
+  # mutate transfer time and week day into correct format
+  delays = delays %>% mutate(PlannedTransferTime = as.numeric(PlannedTransferTime.y)) %>% select(-PlannedTransferTime.y)
   delays$arr.Weekday = factor(delays$arr.Weekday, ordered = FALSE )
+  
   return(delays)
 } 

@@ -13,6 +13,7 @@ model {
   mu[3] ~ normal(4, 2);
   sigma ~ cauchy(0, 2);
   Theta ~ dirichlet(rep_vector(2.0, 3));
+  
   vector[3] contributions;
 
   
