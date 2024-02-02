@@ -25,3 +25,16 @@ model {
   }
 }
 
+generated quantities {
+    real y_pred[N];  // Generated posterior predictive samples
+
+    for (n in 1:N) {
+        int k_sim = categorical_rng(Theta);  // Sample mixture component
+        for (k in 1:3){
+          if (k == k_sim){
+            y_pred[n] = lognormal_rng(mu[k], sigma[k]);
+          }
+        }
+    }
+}
+
