@@ -20,7 +20,7 @@ dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekend, arr.TimeOfDay, Planned
 x <- data.frame(predict(dmy, newdata = x))
 
 
-data <- list(N=length(y), y=y, K=3, X=x,D = ncol(x))
+data <- list(N=length(y), y=y, K=4, X=x,D = ncol(x))
 warmup <- 2000
 niter <- 10000
 fit <- stan(file = "StanModels/lognormal_linearRegression.stan", data=data, warmup=warmup, 
