@@ -19,10 +19,11 @@ x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun"
 dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekend, arr.TimeOfDay, PlannedTransferTime))
 x <- data.frame(predict(dmy, newdata = x))
 
+# use only PTT as explaining variable
 
 data <- list(N=length(y), y=y, K=4, X=x,D = ncol(x))
-warmup <- 2000
-niter <- 10000
+warmup <- 1000
+niter <- 5000
 fit <- stan(file = "StanModels/lognormal_linearRegression.stan", data=data, warmup=warmup, 
             iter=niter, chains=4, cores=4)
 
@@ -34,7 +35,7 @@ traceplot(fit)
 postDraws <- rstan::extract(fit)
 
 # plot posterior predictive
-pred_draws = t(postDraws$y_pred[2000:2008,])
+pred_draws = t(postDraws$y_pred[15000:15008,])
 
 par(mfrow=c(3, 3))  # Set up a 3x3 grid layout for plotting
 

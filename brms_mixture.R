@@ -1,4 +1,5 @@
 library(brms)
+library(caret)
 
 delays = load_delays_simple()
 
@@ -73,9 +74,9 @@ priors <- c(prior(normal(0, 1), Intercept, dpar = mu1),
 
 
 bf_formula = bf(y ~ 1,
-                theta1 ~ 0 + PlannedTransferTime,
-                theta2 ~ 0 + PlannedTransferTime_2,
-                theta3 ~ 0 + PlannedTransferTime_3,
+                #theta1 ~ 0 + PlannedTransferTime,
+                #theta2 ~ 0 + PlannedTransferTime_2,
+                #theta3 ~ 0 + PlannedTransferTime_3,
                 mu1 ~ 1,
                 mu2 ~ 1 + TransferDelay_2,
                 mu3 ~ 1 + TransferDelay_3,
@@ -96,3 +97,29 @@ model <- brm(bf_formula,
 
 model
 pp_check(model)
+
+
+### Fit BRMS model without regression params with VERY informative priors -> from EM fit
+mix = mixture(lognormal, lognormal, lognormal)
+
+priors <- c(prior(normal(1.6, 0.5), Intercept, dpar = mu1),
+            prior(normal(2.9, 0.5), Intercept, dpar = mu2),
+            prior(normal(3.5, 0.5), Intercept, dpar = mu3),
+            prior(normal(0.8, 0.2), class = sigma1),
+            prior(normal(0.25, 0.05), class = sigma2),
+            prior(normal(0.11, 0.01), class = sigma3)
+)
+
+model <- brm(y ~ 1,
+             family = mix,
+             prior = priors,
+             data  = dat, 
+             warmup = 1000,
+             iter  = 3000, 
+             chains = 4, 
+             cores = 4,
+             sample_prior = TRUE)
+
+model
+pp_check(model)
+plot(model)
