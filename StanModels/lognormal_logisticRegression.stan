@@ -3,7 +3,7 @@ data {
   int<lower=1> K;               // Number of components (Gaussians)
   int<lower=1> J;               // Number of explanatory variables
   vector[N] y;                  // Data
-  matrix[N, J] X;               // Explanatory variables
+  matrix[N, D] X;                   // data matrix
 }
 
 parameters {

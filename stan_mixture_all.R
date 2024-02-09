@@ -19,12 +19,20 @@ x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun"
 dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekend, arr.TimeOfDay, PlannedTransferTime))
 x <- data.frame(predict(dmy, newdata = x))
 
-# use only PTT as explaining variable
+# use only PTT and Transfer Delay as explaining variable
+x[is.na(x)] = 0
+x = x %>% select(PlannedTransferTime, PlannedTransferTime_2, PlannedTransferTime_3, PlannedTransferTime_4)
+x2 = x %>% mutate(TransferDelay = 0) %>% 
+  mutate(TransferDelay_2 = PlannedTransferTime_2 - PlannedTransferTime) %>% 
+  mutate(TransferDelay_3 = PlannedTransferTime_3 - PlannedTransferTime) %>% 
+  mutate(TransferDelay_4 = PlannedTransferTime_4 - PlannedTransferTime) %>% 
+  select(TransferDelay, TransferDelay_2, TransferDelay_3, TransferDelay_4)
 
-data <- list(N=length(y), y=y, K=4, X=x,D = ncol(x))
+
+data <- list(N=length(y), y=y, K=4, X=x,D = ncol(x), X1 = x, X2 = x2)
 warmup <- 1000
-niter <- 5000
-fit <- stan(file = "StanModels/lognormal_linearRegression.stan", data=data, warmup=warmup, 
+niter <- 3000
+fit <- stan(file = "StanModels/lognormal_all_regression.stan", data=data, warmup=warmup, 
             iter=niter, chains=4, cores=4)
 
 # Print the fitted model

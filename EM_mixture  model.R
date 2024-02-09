@@ -11,7 +11,7 @@ hist(y, breaks = 20)
 
 fit = mixfit(y,
              ncomp = 4,
-             family = "lnorm")
+             family = "normal")
              #pi = c(0.8,0.1,0.05,0.05))
 
 fit
