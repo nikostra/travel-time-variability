@@ -2,7 +2,7 @@ library(rstan)
 
 delays = load_delays_simple()
 
-y = delays$arrivalDelay
+y = as.numeric(delays$actualArrivalDelay)
 
 # transform data so that all data points are < 0
 minDelay = min(y) - 0.01

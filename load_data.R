@@ -115,7 +115,7 @@ load_delays_all = function(){
   
   # select the minimum actual arrival delay of each group as the transfer that "made it" for that group and select explaining variables
   delays = connected_trains %>% slice_min(actualArrivalDelay) %>% filter(!is.na(actualArrivalDelay)) %>% 
-    ungroup() %>% left_join(plannedTransferTime, by="arr.ActivityId") %>% select(actualArrivalDelay, arr.Weekday, arr.TimeOfDay, nr_reached, PTT_1, PTT_2, PTT_3, PTT_4)
+    ungroup() %>% left_join(plannedTransferTime, by="arr.ActivityId") %>% select(actualArrivalDelay, arr.Weekday, arr.TimeOfDay, nr_reached, PTT_1, PTT_2, PTT_3, PTT_4, ArrivalDelay)
   
   # mutate transfer time and week day into correct format
   delays = delays %>% mutate(PlannedTransferTime = as.numeric(PTT_1)) %>% select(-PTT_1)
@@ -123,6 +123,6 @@ load_delays_all = function(){
   delays = delays %>% mutate(PlannedTransferTime_3 = as.numeric(PTT_3)) %>% select(-PTT_3)
   delays = delays %>% mutate(PlannedTransferTime_4 = as.numeric(PTT_4)) %>% select(-PTT_4)
   delays$arr.Weekday = factor(delays$arr.Weekday, ordered = FALSE )
-  
+  delays$ArrivalDelay = as.numeric(delays$ArrivalDelay)
   return(delays)
 } 

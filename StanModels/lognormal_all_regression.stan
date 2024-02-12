@@ -9,7 +9,7 @@ data {
 }
 
 parameters {
-  // simplex[K] theta;                 // mixing proportions
+  // simplex[K] theta;              // mixing proportions
   vector<lower=0>[K] sigma;         // Standard deviations of components
   matrix[D, K] beta1;               // logistic regression coefficients for each component
   vector[D] beta2[K];               // linear regression coefficients for each component
@@ -39,15 +39,19 @@ model {
   }
 }
 generated quantities {
-  /*
+  
     real y_pred[N];  // Generated posterior predictive samples
+    matrix[N, K] x_beta = X1 * beta1;
 
     for (n in 1:N) {
+        vector[K] theta;
+        theta = softmax(x_beta[n]');
         int k_sim = categorical_rng(theta);  // Sample mixture component
+        
         for (k in 1:K){
           if (k == k_sim){
-            y_pred[n] = lognormal_rng(X[n] * beta[k], sigma[k]);
+            y_pred[n] = lognormal_rng(X2[n] * beta2[k], sigma[k]);
           }
         }
-    }*/
+    }
 }
