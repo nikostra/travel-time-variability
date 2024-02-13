@@ -1,27 +1,30 @@
+library(tidyverse)
 library(mixR)
 
 delays = load_delays_all()
-y = delays$actualArrivalDelay
+y = delays$ArrivalDelay
 
 # transform data so that all data points are < 0
-minDelay = min(y) - 0.01
+minDelay = min(y) - 1
 y = y - minDelay 
+y = log(y)
 
-hist(y, breaks = 20)
+hist(delays$ArrivalDelay, breaks = 40)
 
 fit = mixfit(y,
-             ncomp = 4,
+             ncomp = 2,
              family = "normal")
-             #pi = c(0.8,0.1,0.05,0.05))
 
 fit
 plot(fit)
 
 # plot sample of fitted variables
-y_sample = rmixlnorm(length(y),fit$pi,fit$mu,fit$sd)
-y_sample = y_sample + minDelay # normalise back to real values
+y_sample = rmixnormal(length(y),fit$pi,fit$mu,fit$sd)
+y_sample = exp(y_sample) + minDelay # normalise back to real values
 hist(y_sample, breaks=40)
 
+ks.test(y_sample, delays$ArrivalDelay)
 
-best_fit = select(y,ncomp = c(2,3,4), family = "lnorm")
+
+best_fit = mixR::select(y,ncomp = c(2,3,4), family = "normal")
 best_fit

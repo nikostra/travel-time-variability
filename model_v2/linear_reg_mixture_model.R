@@ -32,11 +32,11 @@ test_model = lm(y ~ ., data = x)
 summary(test_model)
 
 # build a Stan model
-data <- list(N=length(y), y=y, X=x,D = ncol(x))
+data <- list(N=length(y), y=y, X=x,D = ncol(x), K = 2)
 warmup <- 3000
 niter <- 10000
-fit <- stan(file = "model_v2/normal_linear_regression_mu.stan", data=data, warmup=warmup, 
-            iter=niter, chains=4, cores=4)
+fit <- stan(file = "model_v2/normal_linear_regression_mixture_mu.stan", data=data, warmup=warmup, 
+            iter=niter, chains=2, cores=4)
 
 # Print the fitted model
 print(fit,digits_summary=3)
@@ -46,7 +46,7 @@ traceplot(fit)
 postDraws <- rstan::extract(fit)
 
 # plot posterior predictive
-pred_draws = t(postDraws$y_pred[15000:15008,])
+pred_draws = t(postDraws$y_pred[13000:13008,])
 
 par(mfrow=c(3, 3))  # Set up a 3x3 grid layout for plotting
 
@@ -57,6 +57,3 @@ for (i in 1:8) {
 }
 hist(delays$ArrivalDelay, main="Histogram of sample", xlab="Value", breaks = 30)
 
-
-hist(exp(t(postDraws$y_pred[30000,])) + minDelay)
-hist()

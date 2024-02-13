@@ -50,7 +50,7 @@ generated quantities {
         
         for (k in 1:K){
           if (k == k_sim){
-            y_pred[n] = lognormal_rng(X2[n] * beta2[k], sigma[k]);
+            y_pred[n] = lognormal_rng(X2[n] * beta2[k], sigma[k])[1];
           }
         }
     }
