@@ -7,14 +7,14 @@ data {
 }
 
 parameters {
-  real<lower = 0, upper = 1> p_transfer;  // mixing proportions
-  vector<lower=0>[K] sigma;  // scales of mixture components
-  vector[D] beta[K];                // linear regression coefficients for each component
-  vector[D] alpha[K];               // intercept for each component
+  real<lower = 0, upper = 1> p_component;  // mixing proportions
+  vector<lower=0>[K] sigma;               // scales of mixture components
+  vector[D] beta[K];                      // linear regression coefficients for each component
+  vector[K] alpha;                        // intercept for each component
 }
 
 model {
-  p_transfer ~ beta(8, 2);  // Prior for probability, informative prior, 80% of trains are on time
+  p_component ~ beta(5, 5);        // Prior for probability, informative prior, 80% of trains are on time
 
   for (k in 1:K) {
     beta[k] ~ normal(0, 1);        // prior for regression coefficients
@@ -23,9 +23,9 @@ model {
 
 
   for (n in 1:N) {
-    target += log_sum_exp(log(p_transfer) +
+    target += log_sum_exp(log(p_component) +
                           normal_lpdf(y[n] | (alpha[1] + X[n] * beta[1]), sigma[1]),
-                          log1m(p_transfer) +
+                          log1m(p_component) +
                           normal_lpdf(y[n] | (alpha[2] + X[n] * beta[2]), sigma[2]));
   }
 }
@@ -34,10 +34,10 @@ generated quantities {
     real y_pred[N];  // Generated posterior predictive samples
 
     for (n in 1:N) {
-        int k_sim = bernoulli_rng(p_transfer) + 1;  // Sample mixture component
+        int k_sim = bernoulli_rng(p_component) + 1;  // Sample mixture component
         for (k in 1:K){
           if (k == k_sim){
-            y_pred[n] = normal_rng(alpha[k] + X[n] * beta[k], sigma[k])[1];
+            y_pred[n] = normal_rng(alpha[k] + X[n] * beta[k], sigma[k]);
           }
         }
     }
