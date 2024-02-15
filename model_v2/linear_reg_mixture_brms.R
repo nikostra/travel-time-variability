@@ -1,3 +1,4 @@
+library(bayesplot)
 library(brms)
 library(caret)
 
@@ -35,9 +36,10 @@ bf_formula = bf(y ~ 1,
 )
 
 
-priors <- c(prior(normal(0,5),dpar=mu1))
-get_prior(bf_formula,data = dat,family = mix, priors = priors)
-make_stancode(bf_formula,data = dat,family = mix, priors = priors)
+priors <- c(prior(normal(0,5),class = "b",dpar="mu1"),
+            prior(normal(0,5),class = "b",dpar="mu2"))
+get_prior(bf_formula,data = dat,family = mix, prior = priors)
+make_stancode(bf_formula,data = dat,family = mix, prior = priors)
 
 model = brm(bf_formula,
              family = mix,
@@ -49,9 +51,44 @@ model = brm(bf_formula,
              cores = 2,
              sample_prior = TRUE)
 
-model
-pp_check(model)
-pp_check(model, plotfun = "boxplot", nreps = 10, notch = FALSE)
-pp_check(model, plotfun = "hist", nreps = 3)
 
+### Model Evaluation
+loo1 <- loo(model, save_psis = TRUE, cores = 4)
+yrep = posterior_predict(model)
+psis1 <- loo1$psis_object
+lw <- weights(psis1) # normalized log weights
+
+# check model parameters and see if it converged
+model
 plot(model)
+
+# Visual check: Look at distribution of posterior predictive of my model vs the actual data set
+pp_check(model)
+pp_check(model, type = "stat_2d", ndraws = 200)
+
+# Loo
+color_scheme_set("orange")
+ppc_loo_pit_overlay(y, yrep, lw = lw)
+
+ppc_loo_pit_qq(y, yrep, lw = lw)
+ppc_loo_pit_qq(y, yrep, lw = lw, compare = "normal")
+
+# can use the psis object instead of lw
+ppc_loo_pit_qq(y, yrep, psis_object = psis1)
+
+# loo predictive intervals vs observations
+keep_obs <- 1:50
+ppc_loo_intervals(y, yrep, psis_object = psis1, subset = keep_obs)
+
+# Compare quantiles and statistics of posterior predictive samples with actual data
+
+mean(yrep[100,])
+mean(y)
+
+sd(yrep)
+sd(y)
+
+quantile(yrep)
+quantile(y)
+
+
