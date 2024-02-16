@@ -51,16 +51,15 @@ model = brm(bf_formula,
              cores = 2,
              sample_prior = TRUE)
 
+# check model parameters and see if it converged
+model
+plot(model)
 
 ### Model Evaluation
 loo1 <- loo(model, save_psis = TRUE, cores = 4)
 yrep = posterior_predict(model)
 psis1 <- loo1$psis_object
 lw <- weights(psis1) # normalized log weights
-
-# check model parameters and see if it converged
-model
-plot(model)
 
 # Visual check: Look at distribution of posterior predictive of my model vs the actual data set
 pp_check(model)
@@ -82,7 +81,7 @@ ppc_loo_intervals(y, yrep, psis_object = psis1, subset = keep_obs)
 
 # Compare quantiles and statistics of posterior predictive samples with actual data
 
-mean(yrep[100,])
+mean(yrep[1000,])
 mean(y)
 
 sd(yrep)
@@ -91,4 +90,12 @@ sd(y)
 quantile(yrep)
 quantile(y)
 
+pred_draws = t(yrep[3000:3008,])
+par(mfrow=c(3, 3))  # Set up a 3x3 grid layout for plotting
 
+# Loop through each column of the data frame
+for (i in 1:8) {
+  hist(exp(pred_draws[,i]) + minDelay, main=paste("Histogram of Column", i), xlab="Value", breaks = 30)
+  print(ks.test(exp(pred_draws[,i]) + minDelay,delays$ArrivalDelay[delays$ArrivalDelay < 35]))
+}
+hist(delays$ArrivalDelay, main="Histogram of sample", xlab="Value", breaks = 30)

@@ -33,8 +33,8 @@ summary(test_model)
 
 # build a Stan model
 data <- list(N=length(y), y=y, X=x,D = ncol(x), K = 2)
-warmup <- 3000
-niter <- 10000
+warmup <- 2000
+niter <- 6000
 fit <- stan(file = "model_v2/normal_linear_regression_mixture_mu.stan", data=data, warmup=warmup, 
             iter=niter, chains=2, cores=4)
 
@@ -46,7 +46,7 @@ traceplot(fit)
 postDraws <- rstan::extract(fit)
 
 # plot posterior predictive
-pred_draws = t(postDraws$y_pred[13000:13008,])
+pred_draws = t(postDraws$y_pred[3000:3008,])
 
 par(mfrow=c(3, 3))  # Set up a 3x3 grid layout for plotting
 

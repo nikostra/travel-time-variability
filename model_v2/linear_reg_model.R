@@ -33,8 +33,8 @@ summary(test_model)
 
 # build a Stan model
 data <- list(N=length(y), y=y, X=x,D = ncol(x))
-warmup <- 3000
-niter <- 10000
+warmup <- 2000
+niter <- 6000
 fit <- stan(file = "model_v2/normal_linear_regression_mu.stan", data=data, warmup=warmup, 
             iter=niter, chains=4, cores=4)
 
