@@ -23,7 +23,7 @@ x[is.na(x)] = -100
 
 data <- list(N=length(y), y=y, x=x,D = ncol(x), K = 4)
 warmup <- 2000
-niter <- 5000
+niter <- 6000
 fit <- stan(file = "model_v2/logistic_regression_multinomial.stan", data=data, warmup=warmup, 
             iter=niter, chains=4, cores=4)
 

@@ -126,3 +126,44 @@ load_delays_all = function(){
   delays$ArrivalDelay = as.numeric(delays$ArrivalDelay)
   return(delays)
 } 
+
+load_data_classification = function(){
+  # Load first train data
+  connections_av = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Av/connections.fst")
+  # leave in only trains with Linköping in their route
+  connections_av = connections_av %>% filter(str_detect(arr.gtfs.locations, "LP"))
+  # keep only trains with direction from Linköping
+  connections_av_from_lp = connections_av %>% filter((arr.line.group == 6 & arr.direction == 1))
+  # filter only to connections to Växjö
+  connections_av_from_lp = connections_av_from_lp %>% filter(str_detect(dep.gtfs.locations, "VÖ") & dep.direction == 2)
+  connections_av_from_lp = connections_av_from_lp %>% mutate(dep.trainID = paste0(dep.AdvertisedTrainIdent, dep.Date))
+  
+  #group trains in alvesta and add row number in group to model which train was reached
+  grouped_arrivals <- connections_av_from_lp %>% arrange(dep.PlannedDepartureTime) %>% 
+    select(arr.ActivityId, Reached, PlannedTransferTime, arr.Weekday, arr.TimeOfDay, 
+           arr.Operator, arr.ProductName, dep.Operator, dep.ProductName) %>% 
+    group_by(arr.ActivityId) %>% 
+    mutate(reached_number = row_number()) %>% ungroup() %>% select(-arr.ActivityId)
+  
+  # prepare data into correct format
+  grouped_arrivals$arr.Weekday = factor(grouped_arrivals$arr.Weekday, ordered = FALSE )
+  grouped_arrivals$arr.Operator = as.factor(grouped_arrivals$arr.Operator)
+  grouped_arrivals$dep.Operator = as.factor(grouped_arrivals$dep.Operator)
+  grouped_arrivals$arr.ProductName = as.factor(grouped_arrivals$arr.ProductName)
+  grouped_arrivals$dep.ProductName = as.factor(grouped_arrivals$dep.ProductName)
+  grouped_arrivals$PlannedTransferTime = as.numeric(grouped_arrivals$PlannedTransferTime)  
+  
+  ### bring data into proper format
+  grouped_arrivals = grouped_arrivals %>% filter(!is.na(Reached))
+  grouped_arrivals$Reached = ifelse(grouped_arrivals$Reached == 1, 1, 0)
+  
+  # prepare predictors by one hot encoding
+  grouped_arrivals = grouped_arrivals %>% mutate(weekend = ifelse((arr.Weekday == "Sat" | arr.Weekday == "Sun"),1,0)) %>% select(-arr.Weekday)
+  grouped_arrivals = grouped_arrivals %>% mutate(time_mid_day = ifelse(arr.TimeOfDay == "mid-day (9-14)", 1,0), 
+                                       time_afternoon = ifelse(arr.TimeOfDay == "afternoon (14-18)", 1,0),
+                                       time_evening = ifelse(arr.TimeOfDay == "evening (18-22)", 1, 0),
+                                       time_night = ifelse(arr.TimeOfDay == "night (22-5)", 1, 0)) %>% select(-arr.TimeOfDay)
+  
+  
+  return(grouped_arrivals)
+}
