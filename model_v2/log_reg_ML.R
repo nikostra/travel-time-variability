@@ -1,6 +1,7 @@
 library(Matrix)
 library(xgboost)
 library(data.table)
+library(pROC)
 
 connections = load_data_classification()
 
@@ -34,13 +35,52 @@ delays$nr_reached = as.numeric(delays$nr_reached) - 1
 labels = delays$nr_reached
 
 # build a sparse matrix to use in Xgboost. Need to change NA options, otherwise NAs are removed
+
 previous_na_action <- options('na.action')
 options(na.action='na.pass')
-sparse_matrix = sparse.model.matrix(nr_reached ~ ., data = delays)[,-1]
+sparse_matrix = sparse.model.matrix(Reached ~ ., data = connections)[,-1]
 options(na.action=previous_na_action$na.action)
 
-tree_model <- xgboost(data = sparse_matrix, label = labels, max_depth = 4, num_class = 4,
-               eta = 0.3, nthread = 2, nrounds = 1000,objective = "multi:softmax")
+# split data into training and test
+split = createDataPartition(1:nrow(connections), p=0.8, list = FALSE)
+connections_train = sparse_matrix[split,]
+connections_test = sparse_matrix[-split,]
+labels_train = connections[split,]$Reached
+labels_test = connections[-split,]$Reached
+
+# create the grid for the hyperparameter search
+param_grid <- expand.grid(max_depth = c(2, 4, 6, 10),
+                          eta = c(0.01, 0.1, 0.2, 0.3),
+                          nrounds = c(100, 250, 500, 1000),
+                          gamma = 0,
+                          colsample_bytree = 1,
+                          min_child_weight = 1,
+                          subsample = 1)
+control <- trainControl(method = "cv", number = 10)
+
+# perform CV hyperparameter search
+xgb_model <- train(x = connections_train,
+                   y = as.factor(labels_train),
+                   trControl = control,
+                   method = "xgbTree",
+                   metric = "Accuracy",
+                   tuneGrid = param_grid,
+                   verbosity = 0)
+
+# show result 
+print(xgb_model$bestModel)
+print(xgb_model$bestTune)
+
+tree_model <- xgboost(data = connections_train, label = labels_train, max_depth = 6,
+                      eta = 0.1, nthread = 2, nrounds = 250,objective = "binary:logistic")
 
 importance <- xgb.importance(feature_names = colnames(sparse_matrix), model = tree_model)
 importance
+
+# AUC evaluation
+xgb_preds = predict(tree_model, connections_test, type = "response")
+roc_data <- roc(labels_test, xgb_preds)
+auc(roc_data)
+best_auc = auc(roc_data)
+plot(roc_data, main = "ROC Curve")
+
