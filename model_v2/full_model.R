@@ -54,7 +54,7 @@ x = x %>% rename(weekday = arr.WeekendFALSE, time_morning = arr.TimeOfDay.mornin
 
 dat = data.frame(y=y, x)
 
-mix = mixture(gaussian, gaussian)
+mix = mixture(lognormal, lognormal)
 
 bf_formula = bf(y ~ 1,
                 mu1 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night,
@@ -81,8 +81,16 @@ plot(delay_model)
 
 ### Build data for prediction
 
-delay_model = readRDS("model_v2/delay_model.rds")
+delay_model = readRDS("model_v2/delay_model_v2.rds")
 connection_model = readRDS("model_v2/connection_model.rds")
+
+# Scale Transfer time
+connections = load_data_classification()
+transfer_time_prescale = connections$PlannedTransferTime
+delays = load_delays_all()
+y = delays$ArrivalDelay
+minDelay = min(y) - 1
+
 
 # nr_connection: number of intended connections in sample data set
 # transfer_times: vector of transfer time (in minutes) of each connection
@@ -104,7 +112,7 @@ test_data = function(nr_connections,transfer_times,weekend_var, time){
 
 # input test parameters here
 test_connection_times = c(10,30,60)
-test_sample = test_data(length(test_connection_times),test_connection_times,1,4)
+test_sample = test_data(length(test_connection_times),test_connection_times,0,5)
 
 # get probabilities for each connection
 con_1 = predict(connection_model,test_sample[1,])

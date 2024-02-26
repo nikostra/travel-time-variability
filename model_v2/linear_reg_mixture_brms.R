@@ -22,17 +22,18 @@ x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun"
 
 ### one hot encode explaining variables
 dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekend, arr.TimeOfDay))
-x <- data.frame(predict(dmy, newdata = x)) %>% select(-c(arr.WeekendTRUE, arr.TimeOfDay.evening..18.22.))
+x <- data.frame(predict(dmy, newdata = x)) %>% select(-c(arr.WeekendTRUE))
 x = x %>% rename(weekday = arr.WeekendFALSE, time_morning = arr.TimeOfDay.morning..5.9., time_mid_day = arr.TimeOfDay.mid.day..9.14.,
-                 time_afternoon = arr.TimeOfDay.afternoon..14.18., time_night = arr.TimeOfDay.night..22.5.)
+                 time_afternoon = arr.TimeOfDay.afternoon..14.18., time_evening = arr.TimeOfDay.evening..18.22., 
+                 time_night = arr.TimeOfDay.night..22.5.)
 
 dat = data.frame(y=y, x)
 
-mix = mixture(gaussian, gaussian)
+mix = mixture(lognormal, lognormal)
 
 bf_formula = bf(y ~ 1,
-                mu1 ~ 1 + weekday + time_morning + time_mid_day + time_afternoon + time_night,
-                mu2 ~ 1 + weekday + time_morning + time_mid_day + time_afternoon + time_night
+                mu1 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night,
+                mu2 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night
 )
 
 
@@ -45,8 +46,8 @@ model = brm(bf_formula,
              family = mix,
              prior = priors,
              data  = dat, 
-             warmup = 2000,
-             iter  = 6000, 
+             warmup = 1000,
+             iter  = 3000, 
              chains = 2, 
              cores = 2,
              sample_prior = TRUE)
@@ -95,7 +96,7 @@ par(mfrow=c(3, 3))  # Set up a 3x3 grid layout for plotting
 
 # Loop through each column of the data frame
 for (i in 1:8) {
-  hist(exp(pred_draws[,i]) + minDelay, main=paste("Histogram of Column", i), xlab="Value", breaks = 30)
-  print(ks.test(exp(pred_draws[,i]) + minDelay,delays$ArrivalDelay))
+  hist(pred_draws[,i] + minDelay, main=paste("Histogram of Column", i), xlab="Value", breaks = 30)
+  print(ks.test(pred_draws[,i] + minDelay,delays$ArrivalDelay))
 }
 hist(delays$ArrivalDelay, main="Histogram of sample", xlab="Value", breaks = 30)

@@ -167,3 +167,87 @@ load_data_classification = function(){
   
   return(grouped_arrivals)
 }
+
+
+load_data_classification_v2 = function(){
+  # Load first train data
+  connections_av = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Av/connections.fst")
+  # leave in only trains with Linköping in their route
+  connections_av = connections_av %>% filter(str_detect(arr.gtfs.locations, "LP"))
+  # keep only trains with direction from Linköping
+  connections_av_from_lp = connections_av %>% filter((arr.line.group == 6 & arr.direction == 1))
+  # filter only to connections to Växjö
+  connections_av_from_lp = connections_av_from_lp %>% filter(str_detect(dep.gtfs.locations, "VÖ") & dep.direction == 2)
+  connections_av_from_lp = connections_av_from_lp %>% mutate(dep.trainID = paste0(dep.AdvertisedTrainIdent, dep.Date))
+  
+  
+  # Load second train data
+  trains_va = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Vö/trains.fst")
+  
+  # filter out trains without arrival delay (trains starting at Växjö)
+  trains_va = trains_va %>% filter(!is.na(ArrivalDelay))
+  # filter out trains going to Alvesta (alvesta in ViaToLocation)
+  trains_va = trains_va %>% filter(!str_detect(ViaToLocation, "Av")) %>% arrange(PlannedArrival)
+  # add ID as combination of train Nr and date
+  trains_va = trains_va %>% mutate(trainID = paste0(AdvertisedTrainIdent, Date)) %>% dplyr::select(trainID, ArrivalDelay, PlannedArrivalTime)
+  
+  
+  #group trains in alvesta and add row number in group to model which train was reached
+  grouped_arrivals <- connections_av_from_lp %>% arrange(dep.PlannedDepartureTime) %>% 
+    select(arr.ActivityId, Reached, PlannedTransferTime, arr.Weekday, arr.TimeOfDay, 
+           arr.Operator, arr.ProductName, dep.Operator, dep.ProductName, dep.trainID) %>% 
+    group_by(arr.ActivityId) %>% 
+    mutate(reached_number = row_number())
+  
+  # expand from the reached number to a wider boolean format
+  reshaped_data <- grouped_arrivals %>% mutate(nr_reached = reached_number) %>% 
+    pivot_wider(names_from = reached_number, values_from = Reached, names_prefix = "Reached.")
+  
+  # join trains in växjö with connections from alvesta by ID
+  connected_trains = reshaped_data %>% left_join(trains_va,join_by(dep.trainID == trainID))
+  
+  # 
+  
+  # prepare data into correct format
+  connected_trains$arr.Weekday = factor(connected_trains$arr.Weekday, ordered = FALSE )
+  connected_trains$arr.Operator = as.factor(connected_trains$arr.Operator)
+  connected_trains$dep.Operator = as.factor(connected_trains$dep.Operator)
+  connected_trains$arr.ProductName = as.factor(connected_trains$arr.ProductName)
+  connected_trains$dep.ProductName = as.factor(connected_trains$dep.ProductName)
+  connected_trains$PlannedTransferTime = as.numeric(connected_trains$PlannedTransferTime) 
+
+    # prepare predictors by one hot encoding
+  connected_trains = connected_trains %>% mutate(weekend = ifelse((arr.Weekday == "Sat" | arr.Weekday == "Sun"),1,0)) %>% select(-arr.Weekday)
+  connected_trains = connected_trains %>% mutate(time_mid_day = ifelse(arr.TimeOfDay == "mid-day (9-14)", 1,0), 
+                                                 time_afternoon = ifelse(arr.TimeOfDay == "afternoon (14-18)", 1,0),
+                                                 time_evening = ifelse(arr.TimeOfDay == "evening (18-22)", 1, 0),
+                                                 time_night = ifelse(arr.TimeOfDay == "night (22-5)", 1, 0)) %>% select(-arr.TimeOfDay)
+  
+  
+  connections_1 = connected_trains %>% filter(nr_reached == 1) %>% ungroup %>% 
+    mutate(Reached = as.factor(Reached.1)) %>% 
+    select(-c(Reached.1, Reached.2, Reached.3, Reached.4,dep.trainID, arr.ActivityId,
+              ArrivalDelay, PlannedArrivalTime, nr_reached)) %>% filter(!(is.na(Reached)))
+  
+  connections_2 = connected_trains %>% 
+    group_by(arr.ActivityId) %>% filter(any(!Reached.1) & nr_reached == 2) %>% 
+    ungroup %>% mutate(Reached = as.factor(Reached.2)) %>% 
+    select(-c(Reached.1, Reached.2, Reached.3, Reached.4, dep.trainID, arr.ActivityId,
+              ArrivalDelay,PlannedArrivalTime, nr_reached)) %>% filter(!(is.na(Reached)))
+  
+  connections_3 = connected_trains %>% group_by(arr.ActivityId) %>% 
+    filter(any(!Reached.1) & any(!Reached.2) & nr_reached == 3)  %>% 
+    ungroup %>% mutate(Reached = as.factor(Reached.3)) %>% 
+    select(-c(Reached.1, Reached.2, Reached.3, Reached.4, dep.trainID, arr.ActivityId,
+              ArrivalDelay,PlannedArrivalTime, nr_reached)) %>% filter(!(is.na(Reached)))
+  
+  connections_4 = connected_trains %>% group_by(arr.ActivityId) %>%  
+    filter(any(!Reached.1) & any(!Reached.2) & any(!Reached.3) & nr_reached == 4) %>% ungroup %>% 
+    mutate(Reached = as.factor(Reached.4)) %>% 
+    select(-c(Reached.1, Reached.2, Reached.3, Reached.4, dep.trainID, arr.ActivityId,
+              ArrivalDelay, PlannedArrivalTime, nr_reached)) %>% filter(!(is.na(Reached)))
+  
+  
+  return(list(connections_1 = connections_1, connections_2 = connections_2, 
+              connections_3 = connections_3, connections_4 = connections_4))
+}
