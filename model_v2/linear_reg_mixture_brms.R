@@ -13,7 +13,7 @@ minDelay = min(y) - 1
 y = y - minDelay 
 
 # take log of y to be able to use the normal distribution instead of lognormal
-y = log(y)
+#y = log(y)
 
 ### prepare explaining variables
 
@@ -33,12 +33,16 @@ mix = mixture(lognormal, lognormal)
 
 bf_formula = bf(y ~ 1,
                 mu1 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night,
-                mu2 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night
+                mu2 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night,
+                sigma1 ~ 1 + weekday + time_night,
+                sigma2 ~ 1 + weekday + time_night
 )
 
 
 priors <- c(prior(normal(0,5),class = "b",dpar="mu1"),
-            prior(normal(0,5),class = "b",dpar="mu2"))
+            prior(normal(0,5),class = "b",dpar="mu2"),
+            prior(normal(0,5),class = "b",dpar="sigma1"),
+            prior(normal(0,5),class = "b",dpar="sigma2"))
 get_prior(bf_formula,data = dat,family = mix, prior = priors)
 make_stancode(bf_formula,data = dat,family = mix, prior = priors)
 
@@ -46,13 +50,13 @@ model = brm(bf_formula,
              family = mix,
              prior = priors,
              data  = dat, 
-             warmup = 1000,
-             iter  = 3000, 
-             chains = 2, 
-             cores = 2,
+             warmup = 2000,
+             iter  = 6000, 
+             chains = 4, 
+             cores = 4,
              sample_prior = TRUE)
 
-# check model parameters and see if it converged
+ # check model parameters and see if it converged
 model
 plot(model)
 
