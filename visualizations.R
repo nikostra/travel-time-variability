@@ -36,3 +36,19 @@ ggplot(dat, aes(x = Time, y = value)) +
   labs(title = "Connection Reliability per time of day", x = "Time", y = "Connection Reliability") +
   theme_minimal()
 
+# connection reliability per transfer time interval
+
+c = load_data_classification()
+m1 = mean(c %>% filter(PlannedTransferTime < 15) %>% pull(Reached))
+m2 = mean(c %>% filter(PlannedTransferTime > 15 & PlannedTransferTime < 30) %>% pull(Reached))
+m3 = mean(c %>% filter(PlannedTransferTime > 30 & PlannedTransferTime < 45) %>% pull(Reached))
+m4 = mean(c %>% filter(PlannedTransferTime > 45) %>% pull(Reached))
+
+dat = data.frame(transferTime = factor(c("0 - 15 min", "16 - 30 min", "31 - 45 min", "46 - 60 min"),
+                               levels = c("0 - 15 min", "16 - 30 min", "31 - 45 min", "46 - 60 min")), 
+                 value = c(m1,m2,m3,m4))
+ggplot(dat, aes(x = transferTime, y = value)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Connection Reliability per planned transfer time", x = "Planned Transfer Time", y = "Connection Reliability") +
+  theme_minimal()
+
