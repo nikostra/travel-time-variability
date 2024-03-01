@@ -13,3 +13,26 @@ ggplot(delays, aes(x = weekend, y = ArrivalDelay, fill = weekend)) +
        x = "Weekend",
        y = "Delay") +
   theme_minimal()
+
+
+# histogram of delays
+ggplot(delays, aes(x=ArrivalDelay)) + geom_histogram(color="black", fill="white", bins=50) + 
+  labs(title="Histogram of arrival delays in Växjö") + xlab("Arrival delay") + ylab("Count")
+
+# connection reliability per time of the day
+
+c = load_data_classification()
+m1 = mean(c %>% filter(time_mid_day == 0 & time_afternoon == 0 & time_evening == 0 & time_night == 0) %>% pull(Reached))
+m2 = mean(c %>% filter(time_mid_day == 1) %>% pull(Reached))
+m3 = mean(c %>% filter(time_afternoon == 1) %>% pull(Reached))
+m4 = mean(c %>% filter(time_evening == 1) %>% pull(Reached))
+m5 = mean(c %>% filter(time_night == 1) %>% pull(Reached))
+
+dat = data.frame(Time = factor(c("Morning (5-9)", "Mid Day (9-14)", "Afternoon (14-18)", "Evening (18-22)", "Night (22-6)"),
+                                       levels = c("Morning (5-9)", "Mid Day (9-14)", "Afternoon (14-18)", "Evening (18-22)", "Night (22-6)")), 
+                 value = c(m1,m2,m3,m4,m5))
+ggplot(dat, aes(x = Time, y = value)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Connection Reliability per time of day", x = "Time", y = "Connection Reliability") +
+  theme_minimal()
+
