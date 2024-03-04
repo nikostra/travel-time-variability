@@ -80,7 +80,7 @@ load_delays_all = function(){
   #group trains in alvesta and add row number in group to model which train was reached
   grouped_arrivals <- connections_av_from_lp %>% arrange(dep.PlannedDepartureTime) %>% 
     select(arr.ActivityId, Reached, PlannedTransferTime, dep.trainID, ActualTransferTime, arr.Date, 
-           arr.PlannedArrivalTime, dep.PlannedDepartureTime, arr.Weekday, arr.TimeOfDay) %>% 
+           arr.PlannedArrivalTime, dep.PlannedDepartureTime, arr.Weekday, arr.TimeOfDay, dep.line.name, dep.Operator) %>% 
     group_by(arr.ActivityId) %>% 
     mutate(reached_number = row_number())
   
@@ -115,7 +115,9 @@ load_delays_all = function(){
   
   # select the minimum actual arrival delay of each group as the transfer that "made it" for that group and select explaining variables
   delays = connected_trains %>% slice_min(actualArrivalDelay) %>% filter(!is.na(actualArrivalDelay)) %>% 
-    ungroup() %>% left_join(plannedTransferTime, by="arr.ActivityId") %>% select(actualArrivalDelay, arr.Weekday, arr.TimeOfDay, nr_reached, PTT_1, PTT_2, PTT_3, PTT_4, ArrivalDelay)
+    ungroup() %>% left_join(plannedTransferTime, by="arr.ActivityId") %>% 
+    select(actualArrivalDelay, arr.Weekday, arr.TimeOfDay, nr_reached, PTT_1, PTT_2, PTT_3, PTT_4, 
+           ArrivalDelay, dep.line.name, dep.Operator)
   
   # mutate transfer time and week day into correct format
   delays = delays %>% mutate(PlannedTransferTime = as.numeric(PTT_1)) %>% select(-PTT_1)
@@ -124,6 +126,8 @@ load_delays_all = function(){
   delays = delays %>% mutate(PlannedTransferTime_4 = as.numeric(PTT_4)) %>% select(-PTT_4)
   delays$arr.Weekday = factor(delays$arr.Weekday, ordered = FALSE )
   delays$ArrivalDelay = as.numeric(delays$ArrivalDelay)
+  delays$dep.line.name = as.factor(delays$dep.line.name)
+  delays$dep.Operator = as.factor(delays$dep.Operator)
   return(delays)
 } 
 

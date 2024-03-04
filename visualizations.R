@@ -52,3 +52,14 @@ ggplot(dat, aes(x = transferTime, y = value)) +
   labs(title = "Connection Reliability per planned transfer time", x = "Planned Transfer Time", y = "Connection Reliability") +
   theme_minimal()
 
+
+# count how many connections there are for trains arriving in Alvesta
+# needs connections_av_from_lp from load_data_all() function
+
+group_sizes <- connections_av_from_lp %>% group_by(arr.ActivityId) %>% 
+       summarize(count = n()) %>% # Get the size of each group
+       ungroup() %>% # Remove the grouping
+       count(count) # Count how many times each group size occurs
+
+group_sizes
+
