@@ -18,33 +18,33 @@ y = y - minDelay
 # there are differences between the weekdays, moday and friday low, sunday and wednesday high
 # maybe due to a few outliers and not a real effect ?
 # no easy explanation for why these days are special
-v_weekday_1 = delays %>% filter(arr.Weekday == "Mon") %>% pull(ArrivalDelay) %>% var()
-v_weekday_2 = delays %>% filter(arr.Weekday == "Tue") %>% pull(ArrivalDelay) %>% var()
-v_weekday_3 = delays %>% filter(arr.Weekday == "Wed") %>% pull(ArrivalDelay) %>% var()
-v_weekday_4 = delays %>% filter(arr.Weekday == "Thu") %>% pull(ArrivalDelay) %>% var()
-v_weekday_5 = delays %>% filter(arr.Weekday == "Fri") %>% pull(ArrivalDelay) %>% var()
-v_weekday_6 = delays %>% filter(arr.Weekday == "Sat") %>% pull(ArrivalDelay) %>% var()
-v_weekday_7 = delays %>% filter(arr.Weekday == "Sun") %>% pull(ArrivalDelay) %>% var()
+v_weekday_1 = delays %>% filter(arr.Weekday == "Mon") %>% pull(ArrivalDelay) %>% mean()
+v_weekday_2 = delays %>% filter(arr.Weekday == "Tue") %>% pull(ArrivalDelay) %>% mean()
+v_weekday_3 = delays %>% filter(arr.Weekday == "Wed") %>% pull(ArrivalDelay) %>% mean()
+v_weekday_4 = delays %>% filter(arr.Weekday == "Thu") %>% pull(ArrivalDelay) %>% mean()
+v_weekday_5 = delays %>% filter(arr.Weekday == "Fri") %>% pull(ArrivalDelay) %>% mean()
+v_weekday_6 = delays %>% filter(arr.Weekday == "Sat") %>% pull(ArrivalDelay) %>% mean()
+v_weekday_7 = delays %>% filter(arr.Weekday == "Sun") %>% pull(ArrivalDelay) %>% mean()
 
 # weekends have higher variance, not much difference
 v_weekend = delays %>% filter(arr.Weekday == "Sat" | arr.Weekday == "Sun") %>% pull(ArrivalDelay) %>% var()
 v_weekday = delays %>% filter(!(arr.Weekday == "Sat" | arr.Weekday == "Sun")) %>% pull(ArrivalDelay) %>% var()
 
 # morning only low variance (small n), other times are similar, night very high variance (only small n (78))
-v_time_morning = delays %>% filter(arr.TimeOfDay == "morning (5-9)") %>% pull(ArrivalDelay) %>% var()
-v_time_mid_day = delays %>% filter(arr.TimeOfDay == "mid-day (9-14)") %>% pull(ArrivalDelay) %>% var()
-v_time_afternoon = delays %>% filter(arr.TimeOfDay == "afternoon (14-18)") %>% pull(ArrivalDelay) %>% var()
-v_time_evening = delays %>% filter(arr.TimeOfDay == "evening (18-22)") %>% pull(ArrivalDelay) %>% var()
-v_time_night = delays %>% filter(arr.TimeOfDay == "night (22-5)") %>% pull(ArrivalDelay) %>% var()
+v_time_morning = delays %>% filter(arr.TimeOfDay == "morning (5-9)") %>% pull(ArrivalDelay) %>% mean()
+v_time_mid_day = delays %>% filter(arr.TimeOfDay == "mid-day (9-14)") %>% pull(ArrivalDelay) %>% mean()
+v_time_afternoon = delays %>% filter(arr.TimeOfDay == "afternoon (14-18)") %>% pull(ArrivalDelay) %>% mean()
+v_time_evening = delays %>% filter(arr.TimeOfDay == "evening (18-22)") %>% pull(ArrivalDelay) %>% mean()
+v_time_night = delays %>% filter(arr.TimeOfDay == "night (22-5)") %>% pull(ArrivalDelay) %>% mean()
 
-v_operator_sj = delays %>% filter(dep.Operator == "SJ") %>% pull(ArrivalDelay) %>% var()
-v_operator_tdev = delays %>% filter(dep.Operator == "TDEV") %>% pull(ArrivalDelay) %>% var()
+v_operator_sj = delays %>% filter(dep.Operator == "SJ") %>% pull(ArrivalDelay) %>% mean()
+v_operator_tdev = delays %>% filter(dep.Operator == "TDEV") %>% pull(ArrivalDelay) %>% mean()
 
-v_line_g_kac = delays %>% filter(dep.line.name == "G - KAC") %>% pull(ArrivalDelay) %>% var()
-v_line_hm_vo = delays %>% filter(dep.line.name == "HM - VÖ/AV") %>% pull(ArrivalDelay) %>% var()
-v_line_jo_vo = delays %>% filter(dep.line.name == "JÖ/N - VÖ/AV") %>% pull(ArrivalDelay) %>% var()
-v_line_v_vo = delays %>% filter(dep.line.name == "V - VÖ/AV") %>% pull(ArrivalDelay) %>% var()
-v_line_zkk_kac = delays %>% filter(dep.line.name == "ZKK/ZHG/ZKH - KAC/VÖ") %>% pull(ArrivalDelay) %>% var()
+v_line_g_kac = delays %>% filter(dep.line.name == "G - KAC") %>% pull(ArrivalDelay) %>% mean()
+v_line_hm_vo = delays %>% filter(dep.line.name == "HM - VÖ/AV") %>% pull(ArrivalDelay) %>% mean()
+v_line_jo_vo = delays %>% filter(dep.line.name == "JÖ/N - VÖ/AV") %>% pull(ArrivalDelay) %>% mean()
+v_line_v_vo = delays %>% filter(dep.line.name == "V - VÖ/AV") %>% pull(ArrivalDelay) %>% mean()
+v_line_zkk_kac = delays %>% filter(dep.line.name == "ZKK/ZHG/ZKH - KAC/VÖ") %>% pull(ArrivalDelay) %>% mean()
 
 ### prepare explaining variables
 
@@ -64,19 +64,17 @@ dat = data.frame(y=y, x)
 mix = mixture(lognormal, lognormal)
 
 bf_formula = bf(y ~ 1,
-                mu1 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night + 
-                  operator_SJ + line_g_kac + line_hm_vo + line_jo_vo + line_v_vo,
-                mu2 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night + 
-                  operator_SJ + line_g_kac + line_hm_vo + line_jo_vo + line_v_vo
-                #sigma1 ~ 1 + time_night,
-                #sigma2 ~ 1 + time_night
+                mu1 ~ 1 + time_mid_day + time_afternoon + time_evening + time_night,
+                mu2 ~ 1 + time_mid_day + time_afternoon + time_evening + time_night, 
+                sigma1 ~ 1 + time_night,
+                sigma2 ~ 1 + time_night
 )
 
 
-priors <- c(prior(normal(0,5),class = "b",dpar="mu1"),
-            prior(normal(0,5),class = "b",dpar="mu2"))
-            #prior(normal(0,1),class = "b",dpar="sigma1"),
-            #prior(normal(0,1),class = "b",dpar="sigma2"))
+priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
+            prior(normal(0,1),class = "b",dpar="mu2"),
+            prior(normal(0,0.5),class = "b",dpar="sigma1"),
+            prior(normal(0,0.5),class = "b",dpar="sigma2"))
 get_prior(bf_formula,data = dat,family = mix, prior = priors)
 make_stancode(bf_formula,data = dat,family = mix, prior = priors)
 

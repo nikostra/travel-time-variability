@@ -63,3 +63,25 @@ group_sizes <- connections_av_from_lp %>% group_by(arr.ActivityId) %>%
 
 group_sizes
 
+
+
+### Visualization of different prior distributions
+
+data <- data.frame(
+  flat = rbeta(100000,1,1),
+  informative = rbeta(1000,14,1),
+  weak = rnorm(10000,0,1)
+)
+
+
+# Step 3: Reshape data for ggplot
+data_long <- reshape2::melt(data)
+
+# Step 4: Create density plot with ggplot
+ggplot(data_long, aes(value, fill = variable)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density plot of three different priors",
+       x = "Value",
+       y = "Density") +
+  scale_fill_manual(values = c("flat" = "red", "informative" = "blue", "weak" = "green")) + labs(fill='Prior class') 
+  # Customize colors if needed
