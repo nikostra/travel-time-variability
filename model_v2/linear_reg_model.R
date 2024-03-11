@@ -25,7 +25,10 @@ x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun"
 
 ### one hot encode explaining variables
 dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekend, arr.TimeOfDay))
-x <- data.frame(predict(dmy, newdata = x)) %>% select(-c(arr.WeekendTRUE, arr.TimeOfDay.evening..18.22.))
+x <- data.frame(predict(dmy, newdata = x)) %>% select(-c(arr.WeekendTRUE))
+x = x %>% rename(weekday = arr.WeekendFALSE, time_morning = arr.TimeOfDay.morning..5.9., time_mid_day = arr.TimeOfDay.mid.day..9.14.,
+                 time_afternoon = arr.TimeOfDay.afternoon..14.18., time_evening = arr.TimeOfDay.evening..18.22., 
+                 time_night = arr.TimeOfDay.night..22.5.)
 
 # test out data on linear regression
 test_model = lm(y ~ ., data = x)
@@ -60,3 +63,43 @@ hist(delays$ArrivalDelay, main="Histogram of sample", xlab="Value", breaks = 30)
 
 hist(exp(t(postDraws$y_pred[30000,])) + minDelay)
 hist()
+
+
+### Use brms instead
+
+y = delays$ArrivalDelay
+
+# transform data so that all data points are < 0
+minDelay = min(y) - 1
+y = y - minDelay 
+
+
+dat = data.frame(y=y, x)
+
+bf_formula = bf(y ~ 1,
+                mu ~ 1 + weekday + time_morning + time_afternoon + time_evening + time_night
+)
+
+
+priors <- c(prior(normal(0,1),class = "b",dpar="mu"))
+get_prior(bf_formula,data = dat,family = gaussian(), prior = priors)
+
+model = brm(bf_formula,
+            family = weibull(),
+            prior = priors,
+            data  = dat, 
+            warmup = 2000,
+            iter  = 6000, 
+            chains = 4, 
+            cores = 4,
+            sample_prior = TRUE)
+
+# check model parameters and see if it converged
+model
+plot(model)
+pp_check(model)
+pp_check(model, type = "stat_2d", ndraws = 200)
+
+### Model Evaluation
+loo1 <- loo(model, save_psis = TRUE, cores = 4)
+saveRDS(model,file = "model_v2/delay_model_no_mixture.rds")

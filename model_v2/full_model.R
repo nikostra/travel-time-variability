@@ -26,14 +26,14 @@ bf_formula = bf(Reached ~ PlannedTransferTime + weekend + time_mid_day + time_af
 priors <- c(prior(normal(0,5),class = "b"))
 
 connection_model_1 = brm(bf_formula,
-            family = bernoulli,
-            prior = priors,
-            data  = connections_1, 
-            warmup = 3000,
-            iter  = 10000, 
-            chains = 4, 
-            cores = 4,
-            sample_prior = TRUE)
+                          family = bernoulli,
+                          prior = priors,
+                          data  = connections_1, 
+                          warmup = 3000,
+                          iter  = 10000, 
+                          chains = 4, 
+                          cores = 4,
+                          sample_prior = TRUE)
 
 connection_model_2 = brm(bf_formula,
                          family = bernoulli,
@@ -174,8 +174,8 @@ test_data = function(nr_connections,transfer_times,weekend_var, time){
 }
 
 # input test parameters here
-test_connection_times = c(10,30,45,60)
-test_sample = test_data(length(test_connection_times),test_connection_times,0,2)
+test_connection_times = c(10,30,60)
+test_sample = test_data(length(test_connection_times),test_connection_times,0,4)
 
 # get probabilities for each connection
 preds_1 = posterior_predict(connection_model_1,test_sample[1,] %>% rename(PlannedTransferTime = PlannedTransferTime_1))
@@ -220,5 +220,7 @@ for (i in 1:length(test_connection_times)) {
   delay_plot = delay_plot + annotate("text",x=x, label=paste("Connection", i), y=-0.005*i, colour="red")
 }
 delay_plot
+
+print(paste0(sum(is.na(test_delays))/length(test_delays) * 100 , "% of travelers missed all connections"))
 
 summary(test_delays)
