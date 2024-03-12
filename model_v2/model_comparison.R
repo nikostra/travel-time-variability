@@ -7,3 +7,4 @@ delay_model_no_mixture = readRDS("model_v2/delay_model_no_mixture.rds")
 loo_no_mixture = loo(delay_model_no_mixture, save_psis = TRUE, cores = 4)
 
 loo_compare(loo_mixture, loo_no_mixture)
+loo_compare(loo_mixture, loo_no_mixture, loo1)

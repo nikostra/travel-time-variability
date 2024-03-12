@@ -18,31 +18,43 @@ y = y - minDelay
 ### prepare explaining variables
 
 # remodel weekdays to weekend or not weekend variable
-x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun")) %>% select(-arr.Weekday)
+x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun"))
 
 ### one hot encode explaining variables
-dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekend, arr.TimeOfDay))
-x <- data.frame(predict(dmy, newdata = x)) %>% select(-c(arr.WeekendTRUE))
-x = x %>% rename(weekday = arr.WeekendFALSE, time_morning = arr.TimeOfDay.morning..5.9., time_mid_day = arr.TimeOfDay.mid.day..9.14.,
-                 time_afternoon = arr.TimeOfDay.afternoon..14.18., time_evening = arr.TimeOfDay.evening..18.22., 
-                 time_night = arr.TimeOfDay.night..22.5.)
+dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekday, arr.TimeOfDay, arr.Weekend, dep.line.name, dep.Operator))
+x <- data.frame(predict(dmy, newdata = x))
+
+# remove one variable of each group (variable with most observations)
+x = x %>% select(-c(arr.Weekday.Wed, arr.TimeOfDay.mid.day..9.14., arr.WeekendFALSE, dep.line.name.ZKK.ZHG.ZKH...KAC.VÖ, dep.Operator.TDEV))
+
+# remove morning variable because it causes problems (very high coefficient values). Instead these observations are modeled as mid-day
+x = x %>% select(-arr.TimeOfDay.morning..5.9.)
+# remove night variable due to low number of occurences (added to evening variable)
+x = x %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+x = x %>% select(-arr.TimeOfDay.night..22.5.)
 
 dat = data.frame(y=y, x)
 
 mix = mixture(lognormal, lognormal)
 
 bf_formula = bf(y ~ 1,
-                mu1 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night,
-                mu2 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night,
-                sigma1 ~ 1 + weekday + time_night,
-                sigma2 ~ 1 + weekday + time_night
+                mu1 ~ 1 + arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Thu + arr.Weekday.Fri + arr.Weekday.Sat + arr.Weekday.Sun +
+                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
+                  arr.WeekendTRUE + 
+                  dep.line.name.G...KAC + dep.line.name.HM...VÖ.AV + dep.line.name.JÖ.N...VÖ.AV + dep.line.name.V...VÖ.AV +
+                  dep.Operator.SJ,
+                mu2 ~ 1 + arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Thu + arr.Weekday.Fri + arr.Weekday.Sat + arr.Weekday.Sun +
+                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
+                  arr.WeekendTRUE + 
+                  dep.line.name.G...KAC + dep.line.name.HM...VÖ.AV + dep.line.name.JÖ.N...VÖ.AV + dep.line.name.V...VÖ.AV +
+                  dep.Operator.SJ
 )
 
 
-priors <- c(prior(normal(0,5),class = "b",dpar="mu1"),
-            prior(normal(0,5),class = "b",dpar="mu2"),
-            prior(normal(0,5),class = "b",dpar="sigma1"),
-            prior(normal(0,5),class = "b",dpar="sigma2"))
+priors <- c(prior(horseshoe(3, scale_global = 0.75),class = "b",dpar="mu1"),
+            prior(horseshoe(3, scale_global = 0.75),class = "b",dpar="mu2"))
+            #prior(normal(0,5),class = "b",dpar="sigma1"),
+            #prior(normal(0,5),class = "b",dpar="sigma2"))
 get_prior(bf_formula,data = dat,family = mix, prior = priors)
 make_stancode(bf_formula,data = dat,family = mix, prior = priors)
 
@@ -50,10 +62,11 @@ model = brm(bf_formula,
              family = mix,
              prior = priors,
              data  = dat, 
-             warmup = 2000,
-             iter  = 6000, 
+             warmup = 1000,
+             iter  = 3000, 
              chains = 4, 
              cores = 4,
+             control = list(adapt_delta = 0.99),
              sample_prior = TRUE)
 
  # check model parameters and see if it converged
@@ -83,6 +96,7 @@ ppc_loo_pit_qq(y, yrep, psis_object = psis1)
 # loo predictive intervals vs observations
 keep_obs <- 1:50
 ppc_loo_intervals(y, yrep, psis_object = psis1, subset = keep_obs)
+
 
 # Compare quantiles and statistics of posterior predictive samples with actual data
 
