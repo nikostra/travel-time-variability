@@ -85,3 +85,63 @@ ggplot(data_long, aes(value, fill = variable)) +
        y = "Density") +
   scale_fill_manual(values = c("flat" = "red", "informative" = "blue", "weak" = "green")) + labs(fill='Prior class') 
   # Customize colors if needed
+
+### Create plot of mixture model
+
+# values for weekday mid day
+comp1 = rlnorm(820, 2.25,0.22) + minDelay
+comp2 = rlnorm(180, 2.02, 0.71) + minDelay
+full = c(comp1,comp2)
+
+hist(full, breaks=30)
+
+
+data <- data.frame(
+  value = c(comp1, comp2, full),
+  category = factor(rep(c("comp1", "comp2", "full"), times = c(length(comp1), length(comp2), length(full))))
+)
+
+# Use ggplot2 to plot
+ggplot(data, aes(x = value, fill = category)) +
+  geom_density(alpha = 0.5) + # Adjust transparency with alpha
+  labs(title = "Density Plot of comp1, comp2, and full",
+       x = "Value",
+       y = "Density") +
+  scale_fill_manual(values = c("comp1" = "blue", "comp2" = "red", "full" = "green")) + # Change colors if desired
+  theme_minimal()
+
+ggplot(data, aes(x = value, fill = category, y = ..density.. * ..count..)) +
+  geom_histogram(position = "identity", alpha = 0.5, binwidth = 0.1) +
+  labs(title = "Approximated Density Plot of comp1, comp2, and full",
+       x = "Value",
+       y = "Count") +
+  scale_fill_manual(values = c("comp1" = "blue", "comp2" = "red", "full" = "green")) +
+  theme_minimal()
+
+# Calculate densities manually
+density_comp1 <- density(comp1)
+density_comp2 <- density(comp2)
+density_full = density(full)
+
+# Scale the y values by the proportion of the total observations
+total_points <- length(comp1) + length(comp2)
+scaled_density_comp1 <- density_comp1$y * (length(comp1) / total_points)
+scaled_density_comp2 <- density_comp2$y * (length(comp2) / total_points)
+
+# Create a data frame suitable for ggplot
+df_comp1 <- data.frame(x = density_comp1$x, y = scaled_density_comp1, group = "comp1")
+df_comp2 <- data.frame(x = density_comp2$x, y = scaled_density_comp2, group = "comp2")
+df_full = data.frame(x = density_full$x, y = density_full$y, group = "full")
+df <- data.frame(value = full)
+
+# Plot
+ggplot(df, aes(x = value)) +
+  geom_histogram(aes(y = ..density..), binwidth = diff(range(full)) / 30, fill = "grey80", color = "black") +
+  geom_line(data = data.frame(x = density_comp1$x, y = scaled_density_comp1), aes(x = x, y = y, color = "Component 1"), size = 1) +
+  geom_line(data = data.frame(x = density_comp2$x, y = scaled_density_comp2), aes(x = x, y = y, color = "Component 2"), size = 1) +
+  scale_color_manual(values = c("Component 1" = "blue", "Component 2" = "red")) +  
+  labs(title = "Mixture model components overlaid over data sample",
+       x = "Arrival Delay",
+       y = "Scaled Density",
+       color = "Component") +  
+  theme_minimal()

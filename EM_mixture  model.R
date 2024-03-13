@@ -7,7 +7,6 @@ y = delays$ArrivalDelay
 # transform data so that all data points are < 0
 minDelay = min(y) - 1
 y = y - minDelay 
-y = log(y)
 
 hist(delays$ArrivalDelay, breaks = 40)
 

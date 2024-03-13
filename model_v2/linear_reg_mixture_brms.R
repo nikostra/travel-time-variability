@@ -9,7 +9,7 @@ delays = load_delays_all()
 y = delays$ArrivalDelay
 
 # transform data so that all data points are < 0
-minDelay = min(y) - 1
+minDelay = min(y) - 0.01
 y = y - minDelay 
 
 # take log of y to be able to use the normal distribution instead of lognormal
@@ -28,10 +28,8 @@ x <- data.frame(predict(dmy, newdata = x))
 x = x %>% select(-c(arr.Weekday.Wed, arr.TimeOfDay.mid.day..9.14., arr.WeekendFALSE, dep.line.name.ZKK.ZHG.ZKH...KAC.VÖ, dep.Operator.TDEV))
 
 # remove morning variable because it causes problems (very high coefficient values). Instead these observations are modeled as mid-day
-x = x %>% select(-arr.TimeOfDay.morning..5.9.)
 # remove night variable due to low number of occurences (added to evening variable)
 x = x %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
-x = x %>% select(-arr.TimeOfDay.night..22.5.)
 
 dat = data.frame(y=y, x)
 
@@ -41,18 +39,18 @@ bf_formula = bf(y ~ 1,
                 mu1 ~ 1 + arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Thu + arr.Weekday.Fri + arr.Weekday.Sat + arr.Weekday.Sun +
                   arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
                   arr.WeekendTRUE + 
-                  dep.line.name.G...KAC + dep.line.name.HM...VÖ.AV + dep.line.name.JÖ.N...VÖ.AV + dep.line.name.V...VÖ.AV +
+                  dep.line.name.G...KAC +
                   dep.Operator.SJ,
                 mu2 ~ 1 + arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Thu + arr.Weekday.Fri + arr.Weekday.Sat + arr.Weekday.Sun +
                   arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
                   arr.WeekendTRUE + 
-                  dep.line.name.G...KAC + dep.line.name.HM...VÖ.AV + dep.line.name.JÖ.N...VÖ.AV + dep.line.name.V...VÖ.AV +
+                  dep.line.name.G...KAC  +
                   dep.Operator.SJ
 )
 
 
-priors <- c(prior(horseshoe(3, scale_global = 0.75),class = "b",dpar="mu1"),
-            prior(horseshoe(3, scale_global = 0.75),class = "b",dpar="mu2"))
+priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
+            prior(normal(0,1),class = "b",dpar="mu2"))
             #prior(normal(0,5),class = "b",dpar="sigma1"),
             #prior(normal(0,5),class = "b",dpar="sigma2"))
 get_prior(bf_formula,data = dat,family = mix, prior = priors)
@@ -66,7 +64,7 @@ model = brm(bf_formula,
              iter  = 3000, 
              chains = 4, 
              cores = 4,
-             control = list(adapt_delta = 0.99),
+             #control = list(adapt_delta = 0.99),
              sample_prior = TRUE)
 
  # check model parameters and see if it converged
