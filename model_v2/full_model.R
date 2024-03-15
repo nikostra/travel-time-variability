@@ -20,45 +20,89 @@ connections_3$PlannedTransferTime = scale(connections_3$PlannedTransferTime)[,1]
 transfer_time_prescale_4 = connections_4$PlannedTransferTime
 connections_4$PlannedTransferTime = scale(connections_4$PlannedTransferTime)[,1]
 
+### build dummy variables for weekdays and operator / train type
+dmy <- dummyVars(" ~ .", data = connections_1)
+x_1 <- data.frame(predict(dmy, newdata = connections_1)) %>% select(-c(Reached.FALSE))
+dmy <- dummyVars(" ~ .", data = connections_2)
+x_2 <- data.frame(predict(dmy, newdata = connections_2)) %>% select(-c(Reached.FALSE))
+dmy <- dummyVars(" ~ .", data = connections_3)
+x_3 <- data.frame(predict(dmy, newdata = connections_3)) %>% select(-c(Reached.FALSE))
+dmy <- dummyVars(" ~ .", data = connections_4)
+x_4 <- data.frame(predict(dmy, newdata = connections_4)) %>% select(-c(Reached.FALSE))
+
 # build classification model
-bf_formula = bf(Reached ~ PlannedTransferTime + weekend + time_mid_day + time_afternoon + time_evening + time_night)
+bf_formula_1 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
+                    arr.Operator.SNÄLL + 
+                    arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
+                    time_morning + time_afternoon + time_evening + time_night
+)
 
-priors <- c(prior(normal(0,5),class = "b"))
+bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
+                    arr.Operator.SNÄLL + 
+                    arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
+                    time_morning + time_afternoon + time_evening + time_night
+)
 
-connection_model_1 = brm(bf_formula,
+bf_formula_3 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
+                    arr.Operator.SNÄLL + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.Öresundståg + dep.ProductName.SJ.Regional + 
+                    time_morning + time_mid_day + time_afternoon + time_night
+)
+
+bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Operator.SNÄLL + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.SJ.Regional + 
+                    time_mid_day 
+)
+
+priors <- c(prior(normal(0,1),class = "b"))
+
+connection_model_1 = brm(bf_formula_1,
                           family = bernoulli,
                           prior = priors,
-                          data  = connections_1, 
-                          warmup = 3000,
-                          iter  = 10000, 
+                          data  = x_1, 
+                          warmup = 1000,
+                          iter  = 3000, 
                           chains = 4, 
                           cores = 4,
                           sample_prior = TRUE)
-
-connection_model_2 = brm(bf_formula,
+connection_model_2 = brm(bf_formula_2,
                          family = bernoulli,
                          prior = priors,
-                         data  = connections_2, 
-                         warmup = 3000,
-                         iter  = 10000, 
+                         data  = x_2, 
+                         warmup = 1000,
+                         iter  = 3000, 
                          chains = 4, 
                          cores = 4,
                          sample_prior = TRUE)
-connection_model_3 = brm(bf_formula,
+connection_model_3 = brm(bf_formula_3,
                          family = bernoulli,
                          prior = priors,
-                         data  = connections_3, 
-                         warmup = 3000,
-                         iter  = 10000, 
+                         data  = x_3, 
+                         warmup = 1000,
+                         iter  = 3000, 
                          chains = 4, 
                          cores = 4,
                          sample_prior = TRUE)
-connection_model_4 = brm(bf_formula,
+connection_model_4 = brm(bf_formula_4,
                          family = bernoulli,
                          prior = priors,
-                         data  = connections_4, 
-                         warmup = 3000,
-                         iter  = 10000, 
+                         data  = x_4, 
+                         warmup = 1000,
+                         iter  = 3000, 
                          chains = 4, 
                          cores = 4,
                          sample_prior = TRUE)
@@ -68,9 +112,10 @@ saveRDS(connection_model_2,file="model_v2/connection_model_2.rds")
 saveRDS(connection_model_3,file="model_v2/connection_model_3.rds")
 saveRDS(connection_model_4,file="model_v2/connection_model_4.rds")
 
+
+
 ### Build linear regression model for delays
 
-### Modeling all delays with BRMS
 delays = load_delays_all()
 
 y = delays$ArrivalDelay
@@ -155,27 +200,54 @@ minDelay = min(y) - 1
 # transfer_times: vector of transfer time (in minutes) of each connection
 # weekend_var: TRUE if weekend, FALSE if not
 # time of day: 1 - morning, 2 - mid_day, 3 - afternoon, 4 - evening. 5 - night
-test_data = function(nr_connections,transfer_times,weekend_var, time){
-  weekend = rep(weekend_var, nr_connections)
-  weekday = rep(ifelse(weekend_var == 0,1,0), nr_connections)
-  time_morning = rep(ifelse(time == 1,1,0),nr_connections)
-  time_mid_day = rep(ifelse(time == 2,1,0),nr_connections)
-  time_afternoon = rep(ifelse(time == 3,1,0),nr_connections) 
-  time_evening = rep(ifelse(time == 4,1,0),nr_connections) 
-  time_night = rep(ifelse(time == 5,1,0),nr_connections)
-  PlannedTransferTime_1 = scale(transfer_times, center = mean(transfer_time_prescale_1), scale = sd(transfer_time_prescale_1))
-  PlannedTransferTime_2 = scale(transfer_times, center = mean(transfer_time_prescale_2), scale = sd(transfer_time_prescale_2))
-  PlannedTransferTime_3 = scale(transfer_times, center = mean(transfer_time_prescale_3), scale = sd(transfer_time_prescale_3))
-  PlannedTransferTime_4 = scale(transfer_times, center = mean(transfer_time_prescale_4), scale = sd(transfer_time_prescale_4))
+test_data = function(nr_connections,transfer_times,
+                     weekend_var,weekday,time,
+                     arr.Operator = "SJ", arr.ProductName = "SJ Snabbtåg",
+                     dep.Operator = "TDEV", dep.ProductName = "Öresundståg"){
   
-  d = data.frame(PlannedTransferTime_1, PlannedTransferTime_2, PlannedTransferTime_3, PlannedTransferTime_4, 
-                 weekend,weekday,time_morning,time_mid_day,time_afternoon,time_evening,time_night)
+  d = data.frame(weekend = rep(weekend_var, nr_connections), 
+                 weekday = rep(ifelse(weekend_var == 0,1,0), nr_connections))
+  
+  # weekday
+  d$arr.Weekday.Mon = ifelse(weekday == 0,1,0)
+  d$arr.Weekday.Tue = ifelse(weekday == 1,1,0)
+  d$arr.Weekday.Wed = ifelse(weekday == 2,1,0)
+  d$arr.Weekday.Thu = ifelse(weekday == 3,1,0)
+  d$arr.Weekday.Fri = ifelse(weekday == 4,1,0)
+  d$arr.Weekday.Sat = ifelse(weekday == 5,1,0)
+  d$arr.Weekday.Sun = ifelse(weekday == 6,1,0)
+  
+  #time of day
+  d$time_morning = ifelse(time == 1,1,0)
+  d$time_mid_day = ifelse(time == 2,1,0)
+  d$time_afternoon = ifelse(time == 3,1,0)
+  d$time_evening = ifelse(time == 4,1,0)
+  d$time_night = ifelse(time == 5,1,0)
+  
+  # transfer time
+  d$PlannedTransferTime_1 = scale(transfer_times, center = mean(transfer_time_prescale_1), scale = sd(transfer_time_prescale_1))
+  d$PlannedTransferTime_2 = scale(transfer_times, center = mean(transfer_time_prescale_2), scale = sd(transfer_time_prescale_2))
+  d$PlannedTransferTime_3 = scale(transfer_times, center = mean(transfer_time_prescale_3), scale = sd(transfer_time_prescale_3))
+  d$PlannedTransferTime_4 = scale(transfer_times, center = mean(transfer_time_prescale_4), scale = sd(transfer_time_prescale_4))
+  
+  # arrival train characteristics
+  d$arr.Operator.SNÄLL = ifelse(arr.Operator == "SNÄLL",1,0) 
+  d$arr.ProductName.SJ.EuroNight = ifelse(arr.ProductName == "EuroNight",1,0) 
+  d$arr.ProductName.Snälltåget = ifelse(arr.ProductName == "Snälltåget",1,0) 
+  
+  # departure train characteristics
+  d$dep.Operator.TDEV = ifelse(dep.Operator == "TDEV",1,0) 
+  d$dep.ProductName.Krösatågen = ifelse(dep.ProductName == "Krösatågen",1,0) 
+  d$dep.ProductName.SJ.Regional = ifelse(dep.ProductName == "SJ Regional",1,0) 
+  d$dep.ProductName.Öresundståg = ifelse(dep.ProductName == "Öresundståg",1,0) 
+  
   return(d)
 }
 
 # input test parameters here
 test_connection_times = c(10,30,60)
-test_sample = test_data(length(test_connection_times),test_connection_times,0,4)
+test_sample = test_data(nr_connections = length(test_connection_times),transfer_times = test_connection_times,
+                        weekend_var = 0, weekday = 2, time = 2, dep.Operator = "SJ")
 
 # get probabilities for each connection
 preds_1 = posterior_predict(connection_model_1,test_sample[1,] %>% rename(PlannedTransferTime = PlannedTransferTime_1))
@@ -191,10 +263,12 @@ for (i in 1:length(test_delays)) {
   if(preds_1[i] == 0){
     if(preds_2[i] == 0 & length(test_connection_times) > 1){
       if(length(test_connection_times) > 2 & preds_3[i] == 0){
-        if(length(test_connection_times) > 3 & preds_4[i] == 0){
-          test_delays[i] = NA
-        } else if(length(test_connection_times) > 3) {
-          test_delays[i] = test_delays[i] + test_connection_times[4] - test_connection_times[1]
+        if(length(test_connection_times) > 3){
+          if(preds_4[i] == 0){
+            test_delays[i] = NA
+          } else {
+            test_delays[i] = test_delays[i] + test_connection_times[4] - test_connection_times[1]
+          }
         } else {
           test_delays[i] = NA
         }

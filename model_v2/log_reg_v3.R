@@ -1,4 +1,5 @@
 library(brms)
+library(caret)
 
 connections = load_data_classification_v2()
 
@@ -26,23 +27,79 @@ summary(fit_4)
 # models for connection 1 and 2 seem decent, 3 and 4 are questionable
 
 
+### build dummy variables for weekdays and operator / train type
+dmy <- dummyVars(" ~ .", data = connections_1)
+x_1 <- data.frame(predict(dmy, newdata = connections_1)) %>% select(-c(Reached.FALSE))
+dmy <- dummyVars(" ~ .", data = connections_2)
+x_2 <- data.frame(predict(dmy, newdata = connections_2)) %>% select(-c(Reached.FALSE))
+dmy <- dummyVars(" ~ .", data = connections_3)
+x_3 <- data.frame(predict(dmy, newdata = connections_3)) %>% select(-c(Reached.FALSE))
+dmy <- dummyVars(" ~ .", data = connections_4)
+x_4 <- data.frame(predict(dmy, newdata = connections_4)) %>% select(-c(Reached.FALSE))
+
+
 #### build stan models
+
+# build the formulas (first look at colSums and remove variable with most observations from each category)
+colSums(x_1 %>% select(-PlannedTransferTime))
+bf_formula_1 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                                 arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                                 arr.Weekday.Sat + arr.Weekday.Sun +
+                                 arr.Operator.SNÄLL + 
+                                 arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
+                                 dep.Operator.TDEV + 
+                                 dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
+                                 time_morning + time_afternoon + time_evening + time_night
+)
+
+colSums(x_2 %>% select(-PlannedTransferTime))
+bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
+                    arr.Operator.SNÄLL + 
+                    arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
+                    time_morning + time_afternoon + time_evening + time_night
+)
+
+colSums(x_3 %>% select(-PlannedTransferTime))
+bf_formula_3 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
+                    arr.Operator.SNÄLL + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.Öresundståg + dep.ProductName.SJ.Regional + 
+                    time_morning + time_mid_day + time_afternoon + time_night
+)
+
+colSums(x_4 %>% select(-PlannedTransferTime))
+bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Operator.SNÄLL + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.SJ.Regional + 
+                    time_mid_day 
+)
+
+
 # build the model
-bf_formula = bf(Reached ~ PlannedTransferTime + weekend + time_mid_day + time_afternoon + time_evening + time_night)
+#priors <- c(prior(horseshoe(3, par_ratio = 1),class = "b"))
+priors <- c(prior(normal(0,1),class = "b"))
 
-priors <- c(prior(normal(0,5),class = "b"))
-get_prior(bf_formula,data = connections_1,family = bernoulli)
-make_stancode(bf_formula,data = connections_1,family = bernoulli, prior = priors)
+get_prior(bf_formula_1,data = x_1,family = bernoulli)
 
-model = brm(bf_formula,
+model = brm(bf_formula_4,
             family = bernoulli,
             prior = priors,
-            data  = connections_4, 
-            warmup = 3000,
-            iter  = 10000, 
+            data  = x_4, 
+            warmup = 1000,
+            iter  = 3000, 
             chains = 4, 
             cores = 4,
+            #control = list(adapt_delta = 0.99),
             sample_prior = TRUE)
+
 
 # check model parameters and see if it converged
 model

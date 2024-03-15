@@ -221,8 +221,9 @@ load_data_classification_v2 = function(){
   connected_trains$PlannedTransferTime = as.numeric(connected_trains$PlannedTransferTime) 
 
     # prepare predictors by one hot encoding
-  connected_trains = connected_trains %>% mutate(weekend = ifelse((arr.Weekday == "Sat" | arr.Weekday == "Sun"),1,0)) %>% select(-arr.Weekday)
-  connected_trains = connected_trains %>% mutate(time_mid_day = ifelse(arr.TimeOfDay == "mid-day (9-14)", 1,0), 
+  connected_trains = connected_trains %>% mutate(weekend = ifelse((arr.Weekday == "Sat" | arr.Weekday == "Sun"),1,0))
+  connected_trains = connected_trains %>% mutate(time_morning = ifelse(arr.TimeOfDay == "morning (5-9)",1,0),
+                                                 time_mid_day = ifelse(arr.TimeOfDay == "mid-day (9-14)", 1,0), 
                                                  time_afternoon = ifelse(arr.TimeOfDay == "afternoon (14-18)", 1,0),
                                                  time_evening = ifelse(arr.TimeOfDay == "evening (18-22)", 1, 0),
                                                  time_night = ifelse(arr.TimeOfDay == "night (22-5)", 1, 0)) %>% select(-arr.TimeOfDay)
