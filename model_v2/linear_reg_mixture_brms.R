@@ -33,26 +33,24 @@ x = x %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..1
 
 dat = data.frame(y=y, x)
 
-mix = mixture(lognormal, lognormal)
+mix = mixture(lognormal,lognormal, order = "none")
 
 bf_formula = bf(y ~ 1,
-                mu1 ~ 1 + arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Thu + arr.Weekday.Fri + arr.Weekday.Sat + arr.Weekday.Sun +
+                  mu1 ~ 1 +
                   arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
-                  arr.WeekendTRUE + 
-                  dep.line.name.G...KAC +
-                  dep.Operator.SJ,
-                mu2 ~ 1 + arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Thu + arr.Weekday.Fri + arr.Weekday.Sat + arr.Weekday.Sun +
-                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
-                  arr.WeekendTRUE + 
-                  dep.line.name.G...KAC  +
-                  dep.Operator.SJ
+                  dep.line.name.G...KAC
+                )
+
+bf_formula = bf(y ~ 1,
+                sigma1 ~ 1 + arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. + dep.Operator.SJ,
+                sigma2 ~ 1 + arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. + dep.Operator.SJ
 )
 
 
-priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
-            prior(normal(0,1),class = "b",dpar="mu2"))
-            #prior(normal(0,5),class = "b",dpar="sigma1"),
-            #prior(normal(0,5),class = "b",dpar="sigma2"))
+priors <- c(prior(normal(0,1),class = "b",dpar="mu1"))
+            #prior(normal(0,1),class = "b",dpar="mu2"))
+            #prior(normal(0,1),class = "b",dpar="sigma1"),
+            #prior(normal(0,1),class = "b",dpar="sigma2"))
 get_prior(bf_formula,data = dat,family = mix, prior = priors)
 make_stancode(bf_formula,data = dat,family = mix, prior = priors)
 
@@ -62,12 +60,12 @@ model = brm(bf_formula,
              data  = dat, 
              warmup = 1000,
              iter  = 3000, 
-             chains = 4, 
+             chains = 2, 
              cores = 4,
-             #control = list(adapt_delta = 0.99),
+             control = list(adapt_delta = 0.99),
              sample_prior = TRUE)
 
- # check model parameters and see if it converged
+# check model parameters and see if it converged
 model
 plot(model)
 

@@ -14,19 +14,6 @@ connections_2$PlannedTransferTime = scale(connections_2$PlannedTransferTime)[,1]
 connections_3$PlannedTransferTime = scale(connections_3$PlannedTransferTime)[,1]
 connections_4$PlannedTransferTime = scale(connections_4$PlannedTransferTime)[,1]
 
-fit_1 = glm(Reached ~ ., family = "binomial", data = connections_1)
-summary(fit_1)
-fit_2 = glm(Reached ~ ., family = "binomial", data = connections_2)
-summary(fit_2)
-fit_3 = glm(Reached ~ ., family = "binomial", data = connections_3)
-summary(fit_3)
-fit_4 = glm(Reached ~ ., family = "binomial", data = connections_4 %>% 
-            select(-c(dep.Operator)))
-summary(fit_4)
-
-# models for connection 1 and 2 seem decent, 3 and 4 are questionable
-
-
 ### build dummy variables for weekdays and operator / train type
 dmy <- dummyVars(" ~ .", data = connections_1)
 x_1 <- data.frame(predict(dmy, newdata = connections_1)) %>% select(-c(Reached.FALSE))
@@ -84,15 +71,19 @@ bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
 
 
 # build the model
-#priors <- c(prior(horseshoe(3, par_ratio = 1),class = "b"))
-priors <- c(prior(normal(0,1),class = "b"))
+
+# par/ratio is Ratio of the expected number of non-zero coefficients to the expected number of zero coefficients
+# see "Sparsity information and regularization in the horseshoe and other shrinkage priors"
+priors <- c(prior(horseshoe(3, par_ratio = 7/11),class = "b"))
+
+#priors <- c(prior(normal(0,1),class = "b"))
 
 get_prior(bf_formula_1,data = x_1,family = bernoulli)
 
-model = brm(bf_formula_4,
+model = brm(bf_formula_1,
             family = bernoulli,
             prior = priors,
-            data  = x_4, 
+            data  = x_1, 
             warmup = 1000,
             iter  = 3000, 
             chains = 4, 
