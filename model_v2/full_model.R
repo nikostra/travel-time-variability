@@ -118,48 +118,56 @@ saveRDS(connection_model_4,file="model_v2/connection_model_4.rds")
 
 delays = load_delays_all()
 
+# normalize arrival delay
 y = delays$ArrivalDelay
 
-# transform data so that all data points are > 0
-minDelay = min(y) - 0.01
+# transform data so that all data points are < 0
+minDelay = min(y) - 1
 y = y - minDelay 
 
-# prepare explaining variables
+
+### prepare explaining variables
 
 # remodel weekdays to weekend or not weekend variable
-x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun")) %>% select(-arr.Weekday)
+x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun"))
 
 ### one hot encode explaining variables
-dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekend, arr.TimeOfDay))
-x <- data.frame(predict(dmy, newdata = x)) %>% select(-c(arr.WeekendTRUE))
-x = x %>% rename(weekday = arr.WeekendFALSE, time_morning = arr.TimeOfDay.morning..5.9., time_mid_day = arr.TimeOfDay.mid.day..9.14.,
-                 time_afternoon = arr.TimeOfDay.afternoon..14.18., time_evening = arr.TimeOfDay.evening..18.22., 
-                 time_night = arr.TimeOfDay.night..22.5.)
+dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekday, arr.TimeOfDay, arr.Weekend, dep.line.name, dep.Operator))
+x <- data.frame(predict(dmy, newdata = x))
+
+# remove one variable of each group (variable with most observations)
+x = x %>% select(-c(arr.Weekday.Wed, arr.TimeOfDay.mid.day..9.14., arr.WeekendFALSE, dep.line.name.ZKK.ZHG.ZKH...KAC.VÖ, dep.Operator.TDEV))
+
+# remove morning variable because it causes problems (very high coefficient values). Instead these observations are modeled as mid-day
+# remove night variable due to low number of occurences (added to evening variable)
+x = x %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
 
 dat = data.frame(y=y, x)
 
-mix = mixture(lognormal, lognormal)
+mix = mixture(lognormal,lognormal, order = "none")
 
 bf_formula = bf(y ~ 1,
-                mu1 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night,
-                mu2 ~ 1 + weekday + time_mid_day + time_afternoon + time_evening + time_night
+                mu1 ~ 1 + arr.WeekendTRUE + 
+                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
+                  dep.line.name.G...KAC + dep.Operator.SJ
 )
 
 
-priors <- c(prior(normal(0,5),class = "b",dpar="mu1"),
-            prior(normal(0,5),class = "b",dpar="mu2"))
+priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
+            prior(dirichlet(4), class="theta"))
 
-delay_model = brm(bf_formula,
+model = brm(bf_formula,
             family = mix,
             prior = priors,
             data  = dat, 
-            warmup = 3000,
-            iter  = 10000, 
+            warmup = 1000,
+            iter  = 3000, 
             chains = 2, 
-            cores = 2,
+            cores = 4,
+            control = list(adapt_delta = 0.99),
             sample_prior = TRUE)
-delay_model
-plot(delay_model)
+model
+plot(model)
 
 
 
@@ -167,7 +175,7 @@ plot(delay_model)
 
 ### Build data for prediction
 
-delay_model = readRDS("model_v2/delay_model_v2.rds")
+delay_model = readRDS("model_v2/delay_model_v3.rds")
 connection_model = readRDS("model_v2/connection_model.rds")
 connection_model_1 = readRDS("model_v2/connection_model_1.rds")
 connection_model_2 = readRDS("model_v2/connection_model_2.rds")

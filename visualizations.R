@@ -89,8 +89,15 @@ ggplot(data_long, aes(value, fill = variable)) +
 ### Create plot of mixture model
 
 # values for weekday mid day
-comp1 = rlnorm(820, 2.25,0.22) + minDelay
-comp2 = rlnorm(180, 2.02, 0.71) + minDelay
+comp1 = rlnorm(820*0.75, 2.25,0.22) + minDelay
+comp2 = rlnorm(180*0.75, 2.02, 0.71) + minDelay
+
+comp1 = rlnorm(820*0.15, 2.25,0.22) + minDelay + 20
+comp2 = rlnorm(180*0.15, 2.02, 0.71) + minDelay + 20
+
+comp1 = rlnorm(820*0.1, 2.25,0.22) + minDelay + 40
+comp2 = rlnorm(180*0.1, 2.02, 0.71) + minDelay + 40
+
 full = c(comp1,comp2)
 
 hist(full, breaks=30)
@@ -145,3 +152,19 @@ ggplot(df, aes(x = value)) +
        y = "Scaled Density",
        color = "Component") +  
   theme_minimal()
+
+
+### Created data for structure with 3 connections
+
+dat = c()
+
+dat = c(dat,rlnorm(820*0.7, 2.25,0.22) + minDelay)
+dat = c(dat,rlnorm(180*0.7, 2.02, 0.71) + minDelay)
+
+dat = c(dat,rlnorm(820*0.2, 2.25,0.22) + minDelay + 20)
+dat = c(dat,rlnorm(180*0.2, 2.02, 0.71) + minDelay + 20)
+
+dat = c(dat,rlnorm(820*0.1, 2.25,0.22) + minDelay + 40)
+dat = c(dat,rlnorm(180*0.1, 2.02, 0.71) + minDelay + 40)
+
+hist(dat, breaks = 25, xlab = "Arrival delay in Växjö", main="Histogram of arrival delay")

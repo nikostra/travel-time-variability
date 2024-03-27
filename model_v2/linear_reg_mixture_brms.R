@@ -9,7 +9,7 @@ delays = load_delays_all()
 y = delays$ArrivalDelay
 
 # transform data so that all data points are < 0
-minDelay = min(y) - 0.01
+minDelay = min(y) - 1
 y = y - minDelay 
 
 # take log of y to be able to use the normal distribution instead of lognormal
@@ -36,18 +36,14 @@ dat = data.frame(y=y, x)
 mix = mixture(lognormal,lognormal, order = "none")
 
 bf_formula = bf(y ~ 1,
-                  mu1 ~ 1 +
+                  mu1 ~ 1 + arr.WeekendTRUE + 
                   arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
-                  dep.line.name.G...KAC
+                  dep.line.name.G...KAC + dep.Operator.SJ
                 )
 
-bf_formula = bf(y ~ 1,
-                sigma1 ~ 1 + arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. + dep.Operator.SJ,
-                sigma2 ~ 1 + arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. + dep.Operator.SJ
-)
 
-
-priors <- c(prior(normal(0,1),class = "b",dpar="mu1"))
+priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
+            prior(dirichlet(4), class="theta"))
             #prior(normal(0,1),class = "b",dpar="mu2"))
             #prior(normal(0,1),class = "b",dpar="sigma1"),
             #prior(normal(0,1),class = "b",dpar="sigma2"))
@@ -65,9 +61,22 @@ model = brm(bf_formula,
              control = list(adapt_delta = 0.99),
              sample_prior = TRUE)
 
+# model without predictors
+model = brm(y~1,
+            family = mixture(lognormal,lognormal),
+            data  = dat, 
+            warmup = 1000,
+            iter  = 3000, 
+            chains = 2, 
+            cores = 4,
+            control = list(adapt_delta = 0.99),
+            sample_prior = TRUE)
+
+
 # check model parameters and see if it converged
 model
 plot(model)
+
 
 ### Model Evaluation
 loo1 <- loo(model, save_psis = TRUE, cores = 4)
@@ -90,13 +99,13 @@ ppc_loo_pit_qq(y, yrep, lw = lw, compare = "normal")
 ppc_loo_pit_qq(y, yrep, psis_object = psis1)
 
 # loo predictive intervals vs observations
-keep_obs <- 1:50
+keep_obs <- 150:250
 ppc_loo_intervals(y, yrep, psis_object = psis1, subset = keep_obs)
 
 
 # Compare quantiles and statistics of posterior predictive samples with actual data
 
-mean(yrep[1000,])
+mean(yrep)
 mean(y)
 
 sd(yrep)
@@ -105,7 +114,10 @@ sd(y)
 quantile(yrep)
 quantile(y)
 
-pred_draws = t(yrep[3000:3008,])
+summary(y)
+summary(yrep)
+
+pred_draws = t(yrep[2000:2008,])
 par(mfrow=c(3, 3))  # Set up a 3x3 grid layout for plotting
 
 # Loop through each column of the data frame
