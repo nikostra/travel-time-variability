@@ -177,10 +177,10 @@ plot(model)
 
 delay_model = readRDS("model_v2/delay_model_v3.rds")
 connection_model = readRDS("model_v2/connection_model.rds")
-connection_model_1 = readRDS("model_v2/connection_model_1.rds")
-connection_model_2 = readRDS("model_v2/connection_model_2.rds")
-connection_model_3 = readRDS("model_v2/connection_model_3.rds")
-connection_model_4 = readRDS("model_v2/connection_model_4.rds")
+connection_model_1 = readRDS("model_v2/connection_model_1_v2.rds")
+connection_model_2 = readRDS("model_v2/connection_model_2_v2.rds")
+connection_model_3 = readRDS("model_v2/connection_model_3_v2.rds")
+connection_model_4 = readRDS("model_v2/connection_model_4_v2.rds")
 
 # Scale Transfer time
 connections = load_data_classification_v2()
@@ -211,7 +211,7 @@ minDelay = min(y) - 1
 test_data = function(nr_connections,transfer_times,
                      weekend_var,weekday,time,
                      arr.Operator = "SJ", arr.ProductName = "SJ Snabbtåg",
-                     dep.Operator = "TDEV", dep.ProductName = "Öresundståg"){
+                     dep.Operator = "TDEV", dep.ProductName = "Öresundståg", dep.line.name = "ZKK.ZHG.ZKH...KAC.VÖ"){
   
   d = data.frame(weekend = rep(weekend_var, nr_connections), 
                  weekday = rep(ifelse(weekend_var == 0,1,0), nr_connections))
@@ -225,12 +225,16 @@ test_data = function(nr_connections,transfer_times,
   d$arr.Weekday.Sat = ifelse(weekday == 5,1,0)
   d$arr.Weekday.Sun = ifelse(weekday == 6,1,0)
   
+  d$arr.WeekendTRUE = d$weekend
+  
   #time of day
   d$time_morning = ifelse(time == 1,1,0)
   d$time_mid_day = ifelse(time == 2,1,0)
   d$time_afternoon = ifelse(time == 3,1,0)
+  d$arr.TimeOfDay.afternoon..14.18. = d$time_afternoon
   d$time_evening = ifelse(time == 4,1,0)
   d$time_night = ifelse(time == 5,1,0)
+  d$arr.TimeOfDay.evening..18.22. = ifelse(d$time_evening == 1 | d$time_night == 1,1,0)
   
   # transfer time
   d$PlannedTransferTime_1 = scale(transfer_times, center = mean(transfer_time_prescale_1), scale = sd(transfer_time_prescale_1))
@@ -245,17 +249,18 @@ test_data = function(nr_connections,transfer_times,
   
   # departure train characteristics
   d$dep.Operator.TDEV = ifelse(dep.Operator == "TDEV",1,0) 
+  d$dep.Operator.SJ = ifelse(dep.Operator == "SJ",1,0) 
   d$dep.ProductName.Krösatågen = ifelse(dep.ProductName == "Krösatågen",1,0) 
   d$dep.ProductName.SJ.Regional = ifelse(dep.ProductName == "SJ Regional",1,0) 
   d$dep.ProductName.Öresundståg = ifelse(dep.ProductName == "Öresundståg",1,0) 
-  
+  d$dep.line.name.G...KAC = ifelse(dep.line.name == "G...KAC",1,0)
   return(d)
 }
 
 # input test parameters here
 test_connection_times = c(10,30,60)
 test_sample = test_data(nr_connections = length(test_connection_times),transfer_times = test_connection_times,
-                        weekend_var = 0, weekday = 2, time = 2, dep.Operator = "SJ")
+                        weekend_var = 0, weekday = 2, time = 2, dep.Operator = "TDEV")
 
 # get probabilities for each connection
 preds_1 = posterior_predict(connection_model_1,test_sample[1,] %>% rename(PlannedTransferTime = PlannedTransferTime_1))
@@ -306,3 +311,9 @@ delay_plot
 print(paste0(sum(is.na(test_delays))/length(test_delays) * 100 , "% of travelers missed all connections"))
 
 summary(test_delays)
+
+summary(preds_1)
+summary(preds_2)
+summary(preds_3)
+summary(preds_4)
+

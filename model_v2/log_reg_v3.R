@@ -1,5 +1,7 @@
 library(brms)
 library(caret)
+library(loo)
+library(bayesplot)
 
 connections = load_data_classification_v2()
 
@@ -30,8 +32,6 @@ x_4 <- data.frame(predict(dmy, newdata = connections_4)) %>% select(-c(Reached.F
 # build the formulas (first look at colSums and remove variable with most observations from each category)
 colSums(x_1 %>% select(-PlannedTransferTime))
 bf_formula_1 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
-                                 arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
-                                 arr.Weekday.Sat + arr.Weekday.Sun +
                                  arr.Operator.SNÄLL + 
                                  arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
                                  dep.Operator.TDEV + 
@@ -41,8 +41,6 @@ bf_formula_1 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
 
 colSums(x_2 %>% select(-PlannedTransferTime))
 bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
-                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
-                    arr.Weekday.Sat + arr.Weekday.Sun +
                     arr.Operator.SNÄLL + 
                     arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
                     dep.Operator.TDEV + 
@@ -52,8 +50,6 @@ bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
 
 colSums(x_3 %>% select(-PlannedTransferTime))
 bf_formula_3 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
-                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
-                    arr.Weekday.Sat + arr.Weekday.Sun +
                     arr.Operator.SNÄLL + 
                     dep.Operator.TDEV + 
                     dep.ProductName.Öresundståg + dep.ProductName.SJ.Regional + 
@@ -62,7 +58,6 @@ bf_formula_3 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
 
 colSums(x_4 %>% select(-PlannedTransferTime))
 bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
-                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
                     arr.Operator.SNÄLL + 
                     dep.Operator.TDEV + 
                     dep.ProductName.SJ.Regional + 
@@ -88,17 +83,32 @@ model = brm(bf_formula_1,
             iter  = 3000, 
             chains = 4, 
             cores = 4,
-            #control = list(adapt_delta = 0.99),
+            control = list(adapt_delta = 0.99),
             sample_prior = TRUE)
 
 
 # check model parameters and see if it converged
 model
-plot(model)
+#plot(model)
 
 # Visual check: Look at distribution of posterior predictive of my model vs the actual data set
 pp_check(model, ndraws = 30)
 pp_check(model, type = "stat_2d", ndraws = 200)
+
+# compute loo and compare model
+loo1 <- loo(model , save_psis = TRUE, cores = 4)
+
+connection_model_1 = readRDS("model_v2/connection_model_1.rds")
+loo_connection1 <- loo(connection_model_1, save_psis = TRUE, cores = 4)
+connection_model_2 = readRDS("model_v2/connection_model_2.rds")
+loo_connection2 <- loo(connection_model_2, save_psis = TRUE, cores = 4)
+connection_model_3 = readRDS("model_v2/connection_model_3.rds")
+loo_connection3 <- loo(connection_model_3, save_psis = TRUE, cores = 4)
+connection_model_4 = readRDS("model_v2/connection_model_4.rds")
+loo_connection4 <- loo(connection_model_4, save_psis = TRUE, cores = 4)
+
+loo_compare(loo_connection4, loo1)
+
 
 # check test set performance
 brms_preds = predict(model,connections_test)
