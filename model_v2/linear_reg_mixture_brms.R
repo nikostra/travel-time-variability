@@ -35,15 +35,15 @@ dat = data.frame(y=y, x)
 
 mix = mixture(lognormal,lognormal, order = "none")
 
-bf_formula = bf(y ~ 1,
-                  mu1 ~ 1 + arr.WeekendTRUE + 
+bf_formula = bf(y ~ 1 + arr.WeekendTRUE + 
                   arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
                   dep.line.name.G...KAC + dep.Operator.SJ
                 )
 
 
 priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
-            prior(dirichlet(4), class="theta"))
+            prior(normal(0,1),class = "b",dpar="mu2"))
+            #prior(dirichlet(4), class="theta"))
             #prior(normal(0,1),class = "b",dpar="mu2"))
             #prior(normal(0,1),class = "b",dpar="sigma1"),
             #prior(normal(0,1),class = "b",dpar="sigma2"))
