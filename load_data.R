@@ -199,7 +199,7 @@ load_data_classification_v2 = function(){
   #group trains in alvesta and add row number in group to model which train was reached
   grouped_arrivals <- connections_av_from_lp %>% arrange(dep.PlannedDepartureTime) %>% 
     select(arr.ActivityId, Reached, PlannedTransferTime, arr.Weekday, arr.TimeOfDay, 
-           arr.Operator, arr.ProductName, dep.Operator, dep.ProductName, dep.trainID) %>% 
+           arr.Operator, arr.ProductName, dep.Operator, dep.ProductName, dep.trainID, dep.line.name) %>% 
     group_by(arr.ActivityId) %>% 
     mutate(reached_number = row_number())
   
@@ -210,14 +210,13 @@ load_data_classification_v2 = function(){
   # join trains in växjö with connections from alvesta by ID
   connected_trains = reshaped_data %>% left_join(trains_va,join_by(dep.trainID == trainID))
   
-  # 
-  
   # prepare data into correct format
   connected_trains$arr.Weekday = factor(connected_trains$arr.Weekday, ordered = FALSE )
   connected_trains$arr.Operator = as.factor(connected_trains$arr.Operator)
   connected_trains$dep.Operator = as.factor(connected_trains$dep.Operator)
   connected_trains$arr.ProductName = as.factor(connected_trains$arr.ProductName)
   connected_trains$dep.ProductName = as.factor(connected_trains$dep.ProductName)
+  connected_trains$dep.line.name = as.factor(connected_trains$dep.line.name)
   connected_trains$PlannedTransferTime = as.numeric(connected_trains$PlannedTransferTime) 
 
     # prepare predictors by one hot encoding
@@ -226,7 +225,7 @@ load_data_classification_v2 = function(){
                                                  time_mid_day = ifelse(arr.TimeOfDay == "mid-day (9-14)", 1,0), 
                                                  time_afternoon = ifelse(arr.TimeOfDay == "afternoon (14-18)", 1,0),
                                                  time_evening = ifelse(arr.TimeOfDay == "evening (18-22)", 1, 0),
-                                                 time_night = ifelse(arr.TimeOfDay == "night (22-5)", 1, 0)) %>% select(-arr.TimeOfDay)
+                                                 time_night = ifelse(arr.TimeOfDay == "night (22-5)", 1, 0))
   
   
   connections_1 = connected_trains %>% filter(nr_reached == 1) %>% ungroup %>% 

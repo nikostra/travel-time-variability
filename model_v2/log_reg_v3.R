@@ -19,28 +19,26 @@ connections_4$PlannedTransferTime = scale(connections_4$PlannedTransferTime)[,1]
 ### build dummy variables for weekdays and operator / train type
 dmy <- dummyVars(" ~ .", data = connections_1)
 x_1 <- data.frame(predict(dmy, newdata = connections_1)) %>% select(-c(Reached.FALSE))
+x_1 = x_1 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+
 dmy <- dummyVars(" ~ .", data = connections_2)
 x_2 <- data.frame(predict(dmy, newdata = connections_2)) %>% select(-c(Reached.FALSE))
+x_2 = x_2 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+
 dmy <- dummyVars(" ~ .", data = connections_3)
 x_3 <- data.frame(predict(dmy, newdata = connections_3)) %>% select(-c(Reached.FALSE))
+x_3 = x_3 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+
 dmy <- dummyVars(" ~ .", data = connections_4)
 x_4 <- data.frame(predict(dmy, newdata = connections_4)) %>% select(-c(Reached.FALSE))
-
+x_4 = x_4 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
 
 #### build stan models
 
 # build the formulas (first look at colSums and remove variable with most observations from each category)
-colSums(x_1 %>% select(-PlannedTransferTime))
 bf_formula_1 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
-                                 arr.Operator.SNÄLL + 
-                                 arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
-                                 dep.Operator.TDEV + 
-                                 dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
-                                 time_morning + time_afternoon + time_evening + time_night
-)
-
-colSums(x_2 %>% select(-PlannedTransferTime))
-bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
                     arr.Operator.SNÄLL + 
                     arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
                     dep.Operator.TDEV + 
@@ -48,16 +46,27 @@ bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
                     time_morning + time_afternoon + time_evening + time_night
 )
 
-colSums(x_3 %>% select(-PlannedTransferTime))
+bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
+                    arr.Operator.SNÄLL + 
+                    arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
+                    dep.Operator.TDEV + 
+                    dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
+                    time_morning + time_afternoon + time_evening + time_night
+)
+
 bf_formula_3 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
+                    arr.Weekday.Sat + arr.Weekday.Sun +
                     arr.Operator.SNÄLL + 
                     dep.Operator.TDEV + 
                     dep.ProductName.Öresundståg + dep.ProductName.SJ.Regional + 
                     time_morning + time_mid_day + time_afternoon + time_night
 )
 
-colSums(x_4 %>% select(-PlannedTransferTime))
 bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
+                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
                     arr.Operator.SNÄLL + 
                     dep.Operator.TDEV + 
                     dep.ProductName.SJ.Regional + 
@@ -98,16 +107,16 @@ pp_check(model, type = "stat_2d", ndraws = 200)
 # compute loo and compare model
 loo1 <- loo(model , save_psis = TRUE, cores = 4)
 
-connection_model_1 = readRDS("model_v2/connection_model_1.rds")
+connection_model_1 = readRDS("model_v2/connection_model_1_v2.rds")
 loo_connection1 <- loo(connection_model_1, save_psis = TRUE, cores = 4)
-connection_model_2 = readRDS("model_v2/connection_model_2.rds")
+connection_model_2 = readRDS("model_v2/connection_model_2_v2.rds")
 loo_connection2 <- loo(connection_model_2, save_psis = TRUE, cores = 4)
-connection_model_3 = readRDS("model_v2/connection_model_3.rds")
+connection_model_3 = readRDS("model_v2/connection_model_3_v2.rds")
 loo_connection3 <- loo(connection_model_3, save_psis = TRUE, cores = 4)
-connection_model_4 = readRDS("model_v2/connection_model_4.rds")
+connection_model_4 = readRDS("model_v2/connection_model_4_v2.rds")
 loo_connection4 <- loo(connection_model_4, save_psis = TRUE, cores = 4)
 
-loo_compare(loo_connection4, loo1)
+loo_compare(loo_connection1,loo1)
 
 
 # check test set performance
