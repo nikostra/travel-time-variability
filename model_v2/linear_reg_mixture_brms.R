@@ -37,20 +37,14 @@ mix = mixture(lognormal,lognormal, order = "none")
 
 bf_formula = bf(y ~ 1 + arr.WeekendTRUE + 
                   arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
-                  dep.line.name.G...KAC + dep.Operator.SJ,
-                sigma1 ~ 1 + arr.WeekendTRUE + 
-                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
-                  dep.line.name.G...KAC + dep.Operator.SJ,
-                sigma2 ~ 1 + arr.WeekendTRUE + 
-                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
-                  dep.line.name.G...KAC + dep.Operator.SJ
+                  dep.line.name.G...KAC + 
+                  dep.Operator.SJ
 )
 
 
-priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
-            prior(normal(0,1),class = "b",dpar="mu2"),
-            #prior(dirichlet(4), class="theta"))
-            #prior(normal(0,1),class = "b",dpar="mu2"))
+priors <- c(#prior(normal(0,1),class = "b",dpar="mu1"),
+            #prior(normal(0,1),class = "b",dpar="mu2"),
+            prior(normal(0,1),class = "b", dpar="theta1"),
             prior(normal(0,1),class = "b",dpar="sigma1"),
             prior(normal(0,1),class = "b",dpar="sigma2"))
 get_prior(bf_formula,data = dat,family = mix, prior = priors)
@@ -66,17 +60,6 @@ model = brm(bf_formula,
              cores = 4,
              control = list(adapt_delta = 0.99),
              sample_prior = TRUE)
-
-# model without predictors
-model = brm(y~1,
-            family = mixture(lognormal,lognormal),
-            data  = dat, 
-            warmup = 1000,
-            iter  = 3000, 
-            chains = 2, 
-            cores = 4,
-            control = list(adapt_delta = 0.99),
-            sample_prior = TRUE)
 
 
 # check model parameters and see if it converged

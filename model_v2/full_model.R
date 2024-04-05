@@ -175,7 +175,7 @@ plot(model)
 
 ### Build data for prediction
 
-delay_model = readRDS("model_v2/delay_model_v3.rds")
+delay_model = readRDS("model_v2/delay_model_lognormal_mixture_mu_sigma.rds")
 connection_model = readRDS("model_v2/connection_model.rds")
 connection_model_1 = readRDS("model_v2/connection_model_1_v2.rds")
 connection_model_2 = readRDS("model_v2/connection_model_2_v2.rds")
@@ -211,7 +211,8 @@ minDelay = min(y) - 1
 test_data = function(nr_connections,transfer_times,
                      weekend_var,weekday,time,
                      arr.Operator = "SJ", arr.ProductName = "SJ Snabbtåg",
-                     dep.Operator = "TDEV", dep.ProductName = "Öresundståg", dep.line.name = "ZKK.ZHG.ZKH...KAC.VÖ"){
+                     dep.Operator = "TDEV", dep.ProductName = "Öresundståg", 
+                     dep.line.name = "ZKK.ZHG.ZKH...KAC.VÖ"){
   
   d = data.frame(weekend = rep(weekend_var, nr_connections), 
                  weekday = rep(ifelse(weekend_var == 0,1,0), nr_connections))
@@ -258,9 +259,9 @@ test_data = function(nr_connections,transfer_times,
 }
 
 # input test parameters here
-test_connection_times = c(10,30,60)
+test_connection_times = c(10,20,50, 60)
 test_sample = test_data(nr_connections = length(test_connection_times),transfer_times = test_connection_times,
-                        weekend_var = 0, weekday = 2, time = 2, dep.Operator = "TDEV")
+                        weekend_var = 0, weekday = 4, time = 4, dep.Operator = "SJ", dep.line.name = "G...KAC")
 
 # get probabilities for each connection
 preds_1 = posterior_predict(connection_model_1,test_sample[1,] %>% rename(PlannedTransferTime = PlannedTransferTime_1))
