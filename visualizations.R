@@ -168,3 +168,29 @@ dat = c(dat,rlnorm(820*0.1, 2.25,0.22) + minDelay + 40)
 dat = c(dat,rlnorm(180*0.1, 2.02, 0.71) + minDelay + 40)
 
 hist(dat, breaks = 25, xlab = "Arrival delay in Växjö", main="Histogram of arrival delay")
+
+
+
+### Visualize delays of different lines
+
+hist(delays %>% filter(dep.line.name == "G - KAC") %>% pull(ArrivalDelay), breaks = 50)
+summary(delays %>% filter(dep.line.name == "G - KAC") %>% pull(ArrivalDelay))
+
+
+hist(delays %>% filter(dep.line.name != "G - KAC") %>% pull(ArrivalDelay), breaks = 50)
+summary(delays %>% filter(dep.line.name != "G - KAC") %>% pull(ArrivalDelay))
+
+
+hist(delays %>% filter(dep.line.name == "HM - VÖ/AV") %>% pull(ArrivalDelay), breaks = 50)
+summary(delays %>% filter(dep.line.name == "HM - VÖ/AV") %>% pull(ArrivalDelay))
+hist(delays %>% filter(dep.line.name == "JÖ/N - VÖ/AV") %>% pull(ArrivalDelay), breaks = 50)
+summary(delays %>% filter(dep.line.name == "JÖ/N - VÖ/AV") %>% pull(ArrivalDelay))
+hist(delays %>% filter(dep.line.name == "V - VÖ/AV") %>% pull(ArrivalDelay), breaks = 50)
+summary(delays %>% filter(dep.line.name == "V - VÖ/AV") %>% pull(ArrivalDelay))
+hist(delays %>% filter(dep.line.name == "ZKK/ZHG/ZKH - KAC/VÖ") %>% pull(ArrivalDelay), breaks = 50)
+summary(delays %>% filter(dep.line.name == "ZKK/ZHG/ZKH - KAC/VÖ") %>% pull(ArrivalDelay))
+
+ggplot(delays, aes(x=dep.line.name, y=ArrivalDelay, fill=dep.line.name)) +
+  geom_boxplot(outlier.shape = NA) +
+  labs(title="Box Plot of Groups", x="Group", y="Value") +
+  theme_minimal()

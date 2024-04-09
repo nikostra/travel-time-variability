@@ -26,6 +26,7 @@ loo_weibull = loo(weibull_mixture_model,save_psis=TRUE,cores=4)
 
 loo_compare(loo_mixture_symmetric_mu_sigma, 
             loo_mixture_symmetric_mu_theta,
+            loo_mixture_symmetric_sigma_theta,
             loo_mixture_asymmetric_mu, 
             loo_mixture_symmetric_mu, 
             loo_no_mixture, 
@@ -34,6 +35,7 @@ loo_compare(loo_mixture_symmetric_mu_sigma,
 
 loo_compare(loo_mixture_symmetric_mu_sigma, 
             loo_mixture_symmetric_mu_theta,
+            loo_mixture_symmetric_sigma_theta,
             loo_mixture_asymmetric_mu, 
             loo_mixture_symmetric_mu, 
             loo_no_mixture, 
