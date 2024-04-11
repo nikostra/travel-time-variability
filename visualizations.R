@@ -17,7 +17,8 @@ ggplot(delays, aes(x = weekend, y = ArrivalDelay, fill = weekend)) +
 
 # histogram of delays
 ggplot(delays, aes(x=ArrivalDelay)) + geom_histogram(color="black", fill="white", bins=50) + 
-  labs(title="Histogram of arrival delays in Växjö") + xlab("Arrival delay") + ylab("Count")
+  labs(title="Histogram of arrival delays in Växjö") + xlab("Arrival delay") + ylab("Count") +
+  theme(text = element_text(size=15))
 
 # connection reliability per time of the day
 
@@ -192,5 +193,7 @@ summary(delays %>% filter(dep.line.name == "ZKK/ZHG/ZKH - KAC/VÖ") %>% pull(Arr
 
 ggplot(delays, aes(x=dep.line.name, y=ArrivalDelay, fill=dep.line.name)) +
   geom_boxplot(outlier.shape = NA) +
-  labs(title="Box Plot of Groups", x="Group", y="Value") +
-  theme_minimal()
+  labs(title="Box Plot of arrival delays in Växjö by line", x="Line", y="Arrival Delay") +
+  scale_y_continuous(limits = c(-5, 10)) + theme(text = element_text(size=15))
+
+

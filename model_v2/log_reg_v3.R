@@ -19,19 +19,19 @@ connections_4$PlannedTransferTime = scale(connections_4$PlannedTransferTime)[,1]
 ### build dummy variables for weekdays and operator / train type
 dmy <- dummyVars(" ~ .", data = connections_1)
 x_1 <- data.frame(predict(dmy, newdata = connections_1)) %>% select(-c(Reached.FALSE))
-x_1 = x_1 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+#x_1 = x_1 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
 
 dmy <- dummyVars(" ~ .", data = connections_2)
 x_2 <- data.frame(predict(dmy, newdata = connections_2)) %>% select(-c(Reached.FALSE))
-x_2 = x_2 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+#x_2 = x_2 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
 
 dmy <- dummyVars(" ~ .", data = connections_3)
 x_3 <- data.frame(predict(dmy, newdata = connections_3)) %>% select(-c(Reached.FALSE))
-x_3 = x_3 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+#x_3 = x_3 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
 
 dmy <- dummyVars(" ~ .", data = connections_4)
 x_4 <- data.frame(predict(dmy, newdata = connections_4)) %>% select(-c(Reached.FALSE))
-x_4 = x_4 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+#x_4 = x_4 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
 
 #### build stan models
 
@@ -75,16 +75,27 @@ bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
 # par/ratio is Ratio of the expected number of non-zero coefficients to the expected number of zero coefficients
 # see "Sparsity information and regularization in the horseshoe and other shrinkage priors"
 #priors <- c(prior(horseshoe(3, par_ratio = 7/11),class = "b"))
-priors <- c(prior(horseshoe(),class = "b"))
+priors <- c(prior(horseshoe(3),class = "b"))
 
 priors <- c(prior(normal(0,1),class = "b"))
 
 get_prior(bf_formula_1,data = x_1,family = bernoulli)
 
-model = brm(bf_formula_3,
+model_horseshoe = brm(bf_formula_4,
             family = bernoulli,
-            prior = priors,
-            data  = x_3, 
+            prior = c(prior(horseshoe(3),class = "b")),
+            data  = x_4, 
+            warmup = 1000,
+            iter  = 3000, 
+            chains = 4, 
+            cores = 4,
+            control = list(adapt_delta = 0.99),
+            sample_prior = TRUE)
+
+model_normal = brm(bf_formula_4,
+            family = bernoulli,
+            prior = c(prior(normal(0,1),class = "b")),
+            data  = x_4, 
             warmup = 1000,
             iter  = 3000, 
             chains = 4, 
@@ -94,7 +105,7 @@ model = brm(bf_formula_3,
 
 
 # check model parameters and see if it converged
-model
+model_normal
 plot(model)
 
 # Visual check: Look at distribution of posterior predictive of my model vs the actual data set
@@ -102,7 +113,11 @@ pp_check(model, ndraws = 30)
 pp_check(model, type = "stat_2d", ndraws = 200)
 
 # compute loo and compare model
-loo1 <- loo(model , save_psis = TRUE, cores = 4)
+model4_horseshoe = model_horseshoe
+loo4_horseshoe <- loo(model4_horseshoe , save_psis = TRUE, cores = 4)
+
+model4_normal = model_normal
+loo4_normal <- loo(model4_normal , save_psis = TRUE, cores = 4)
 
 connection_model_1 = readRDS("model_v2/connection_model_1_v2.rds")
 loo_connection1 <- loo(connection_model_1, save_psis = TRUE, cores = 4)
@@ -113,10 +128,11 @@ loo_connection3 <- loo(connection_model_3, save_psis = TRUE, cores = 4)
 connection_model_4 = readRDS("model_v2/connection_model_4_v2.rds")
 loo_connection4 <- loo(connection_model_4, save_psis = TRUE, cores = 4)
 
-loo_compare(loo_connection3,loo3_normal, loo3_horseshoe)
+loo_compare(loo_connection4,loo4_horseshoe, loo4_normal)
 
 
-#saveRDS(model, "model_v2/connection_model_2_v3.rds")
+saveRDS(model4_normal, "model_v2/connection_model_4_v3_normal.rds")
+saveRDS(model4_horseshoe, "model_v2/connection_model_4_v3_horseshoe.rds")
 
 
 # check test set performance
