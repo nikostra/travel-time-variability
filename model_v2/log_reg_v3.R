@@ -36,40 +36,36 @@ x_4 = x_4 %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evenin
 #### build stan models
 
 # build the formulas (first look at colSums and remove variable with most observations from each category)
+colSums(x_1)
 bf_formula_1 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
-                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
-                    arr.Weekday.Sat + arr.Weekday.Sun +
-                    arr.Operator.SNÄLL + 
                     arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
                     dep.Operator.TDEV + 
-                    dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
+                    dep.line.name.G...KAC + dep.line.name.HM...VÖ.AV + dep.line.name.JÖ.N...VÖ.AV + dep.line.name.V...VÖ.AV + 
                     time_morning + time_afternoon + time_evening + time_night
 )
 
+colSums(x_2)
 bf_formula_2 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
-                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
-                    arr.Weekday.Sat + arr.Weekday.Sun +
                     arr.Operator.SNÄLL + 
                     arr.ProductName.SJ.EuroNight + arr.ProductName.Snälltåget + 
                     dep.Operator.TDEV + 
-                    dep.ProductName.Krösatågen + dep.ProductName.SJ.Regional + 
+                    dep.line.name.G...KAC + dep.line.name.HM...VÖ.AV + dep.line.name.JÖ.N...VÖ.AV + dep.line.name.V...VÖ.AV + 
                     time_morning + time_afternoon + time_evening + time_night
 )
 
+colSums(x_3)
 bf_formula_3 = bf(Reached.TRUE ~ PlannedTransferTime + weekend +
-                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
-                    arr.Weekday.Sat + arr.Weekday.Sun +
                     arr.Operator.SNÄLL + 
                     dep.Operator.TDEV + 
-                    dep.ProductName.Öresundståg + dep.ProductName.SJ.Regional + 
+                    dep.line.name.G...KAC + dep.line.name.HM...VÖ.AV + dep.line.name.JÖ.N...VÖ.AV + dep.line.name.V...VÖ.AV + 
                     time_morning + time_mid_day + time_afternoon + time_night
 )
 
+colSums(x_4)
 bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
-                    arr.Weekday.Mon + arr.Weekday.Tue + arr.Weekday.Wed + arr.Weekday.Fri +
                     arr.Operator.SNÄLL + 
                     dep.Operator.TDEV + 
-                    dep.ProductName.SJ.Regional + 
+                    dep.line.name.G...KAC + 
                     time_mid_day 
 )
 
@@ -78,16 +74,17 @@ bf_formula_4 = bf(Reached.TRUE ~ PlannedTransferTime +
 
 # par/ratio is Ratio of the expected number of non-zero coefficients to the expected number of zero coefficients
 # see "Sparsity information and regularization in the horseshoe and other shrinkage priors"
-priors <- c(prior(horseshoe(3, par_ratio = 7/11),class = "b"))
+#priors <- c(prior(horseshoe(3, par_ratio = 7/11),class = "b"))
+priors <- c(prior(horseshoe(),class = "b"))
 
-#priors <- c(prior(normal(0,1),class = "b"))
+priors <- c(prior(normal(0,1),class = "b"))
 
 get_prior(bf_formula_1,data = x_1,family = bernoulli)
 
-model = brm(bf_formula_1,
+model = brm(bf_formula_3,
             family = bernoulli,
             prior = priors,
-            data  = x_1, 
+            data  = x_3, 
             warmup = 1000,
             iter  = 3000, 
             chains = 4, 
@@ -98,7 +95,7 @@ model = brm(bf_formula_1,
 
 # check model parameters and see if it converged
 model
-#plot(model)
+plot(model)
 
 # Visual check: Look at distribution of posterior predictive of my model vs the actual data set
 pp_check(model, ndraws = 30)
@@ -116,7 +113,10 @@ loo_connection3 <- loo(connection_model_3, save_psis = TRUE, cores = 4)
 connection_model_4 = readRDS("model_v2/connection_model_4_v2.rds")
 loo_connection4 <- loo(connection_model_4, save_psis = TRUE, cores = 4)
 
-loo_compare(loo_connection1,loo1)
+loo_compare(loo_connection3,loo3_normal, loo3_horseshoe)
+
+
+#saveRDS(model, "model_v2/connection_model_2_v3.rds")
 
 
 # check test set performance
