@@ -176,11 +176,10 @@ plot(model)
 ### Build data for prediction
 
 delay_model = readRDS("model_v2/delay_model_lognormal_mixture_mu_sigma.rds")
-connection_model = readRDS("model_v2/connection_model.rds")
-connection_model_1 = readRDS("model_v2/connection_model_1_v2.rds")
-connection_model_2 = readRDS("model_v2/connection_model_2_v2.rds")
-connection_model_3 = readRDS("model_v2/connection_model_3_v2.rds")
-connection_model_4 = readRDS("model_v2/connection_model_4_v2.rds")
+connection_model_1 = readRDS("model_v2/connection_model_1_v3_horseshoe.rds")
+connection_model_2 = readRDS("model_v2/connection_model_2_v3_horseshoe.rds")
+connection_model_3 = readRDS("model_v2/connection_model_3_v3_horseshoe.rds")
+connection_model_4 = readRDS("model_v2/connection_model_4_v3_horseshoe.rds")
 
 # Scale Transfer time
 connections = load_data_classification_v2()
