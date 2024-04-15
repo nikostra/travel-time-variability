@@ -38,15 +38,27 @@ mix = mixture(lognormal,lognormal, order = "none")
 bf_formula = bf(y ~ 1 + arr.WeekendTRUE + 
                   arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
                   dep.line.name.G...KAC + 
+                  dep.Operator.SJ,
+                sigma1 ~ 1 + arr.WeekendTRUE + 
+                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
+                  dep.line.name.G...KAC + 
+                  dep.Operator.SJ,
+                sigma2 ~ 1 + arr.WeekendTRUE + 
+                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
+                  dep.line.name.G...KAC + 
+                  dep.Operator.SJ,
+                theta1 ~ 1 + arr.WeekendTRUE + 
+                  arr.TimeOfDay.afternoon..14.18. + arr.TimeOfDay.evening..18.22. +
+                  dep.line.name.G...KAC + 
                   dep.Operator.SJ
 )
 
 
-priors <- c(#prior(normal(0,1),class = "b",dpar="mu1"),
-            #prior(normal(0,1),class = "b",dpar="mu2"),
-            prior(normal(0,1),class = "b", dpar="theta1"),
-            prior(normal(0,1),class = "b",dpar="sigma1"),
-            prior(normal(0,1),class = "b",dpar="sigma2"))
+priors <- c(prior(normal(0,1),class = "b",dpar="mu1"),
+            prior(normal(0,1),class = "b",dpar="mu2"))
+            #prior(normal(0,1),class = "b", dpar="theta1")
+            #prior(normal(0,1),class = "b",dpar="sigma1"),
+            #prior(normal(0,1),class = "b",dpar="sigma2"))
 get_prior(bf_formula,data = dat,family = mix, prior = priors)
 make_stancode(bf_formula,data = dat,family = mix, prior = priors)
 

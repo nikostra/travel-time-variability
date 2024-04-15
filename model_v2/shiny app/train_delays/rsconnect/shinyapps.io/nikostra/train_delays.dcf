@@ -1,0 +1,10 @@
+name: train_delays
+title: train_delays
+username: nikostra
+account: nikostra
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11760828
+bundleId:
+url: https://nikostra.shinyapps.io/train_delays/
+version: 1

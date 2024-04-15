@@ -19,6 +19,19 @@ fluidPage(
     sidebarLayout(
         sidebarPanel(
           selectInput(
+            "model",
+            "Choose a model",
+            c("Mu+sigma","Mu","Mu+theta"),
+            selected = NULL,
+            multiple = FALSE,
+            selectize = TRUE,
+            width = NULL,
+            size = NULL
+          ),
+          
+          hr(),
+          
+          selectInput(
             "weekday",
             "Choose a weekday",
             c("weekday","weekend"),
@@ -73,7 +86,8 @@ fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-            plotOutput("delayPlot")
+          div(textOutput("warnings"), style="color:red"),
+          plotOutput("delayPlot")
         )
     )
 )

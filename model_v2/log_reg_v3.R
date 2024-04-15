@@ -126,10 +126,18 @@ loo_connection1_normal <- loo(connection_model_1_normal, save_psis = TRUE, cores
 
 connection_model_2 = readRDS("model_v2/connection_model_2_v3_horseshoe.rds")
 loo_connection2 <- loo(connection_model_2, save_psis = TRUE, cores = 4)
-connection_model_3 = readRDS("model_v2/connection_model_3_v3_horseshoe.rds")
+connection_model_2_normal = readRDS("model_v2/connection_model_2_v3_normal.rds")
+loo_connection2_normal <- loo(connection_model_2_normal, save_psis = TRUE, cores = 4)
+
+connection_model3 = readRDS("model_v2/connection_model_3_v3_horseshoe.rds")
 loo_connection3 <- loo(connection_model_3, save_psis = TRUE, cores = 4)
+connection_model_3_normal = readRDS("model_v2/connection_model_3_v3_normal.rds")
+loo_connection3_normal <- loo(connection_model_3_normal, save_psis = TRUE, cores = 4)
+
 connection_model_4 = readRDS("model_v2/connection_model_4_v3_horseshoe.rds")
 loo_connection4 <- loo(connection_model_4, save_psis = TRUE, cores = 4)
+connection_model_4_normal = readRDS("model_v2/connection_model_4_v3_normal.rds")
+loo_connection4_normal <- loo(connection_model_4_normal, save_psis = TRUE, cores = 4)
 
 loo_compare(loo_connection4,loo4_horseshoe, loo4_normal)
 

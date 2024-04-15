@@ -131,6 +131,42 @@ load_delays_all = function(){
   return(delays)
 } 
 
+# no function where all arrivals in växjö are considered, not just these, where the connection was actually reached.
+load_delays_no_grouping = function(){
+  # Load first train data
+  connections_av = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Av/connections.fst")
+  # leave in only trains with Linköping in their route
+  connections_av = connections_av %>% filter(str_detect(arr.gtfs.locations, "LP"))
+  # keep only trains with direction from Linköping
+  connections_av_from_lp = connections_av %>% filter((arr.line.group == 6 & arr.direction == 1))
+  # filter only to connections to Växjö
+  connections_av_from_lp = connections_av_from_lp %>% filter(str_detect(dep.gtfs.locations, "VÖ") & dep.direction == 2)
+  connections_av_from_lp = connections_av_from_lp %>% mutate(dep.trainID = paste0(dep.AdvertisedTrainIdent, dep.Date))
+  
+  
+  # Load second train data
+  trains_va = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Vö/trains.fst")
+  # filter out trains without arrival delay (trains starting at Växjö)
+  trains_va = trains_va %>% filter(!is.na(ArrivalDelay))
+  # filter out trains going to Alvesta (alvesta in ViaToLocation)
+  trains_va = trains_va %>% filter(!str_detect(ViaToLocation, "Av")) %>% arrange(PlannedArrival)
+  # add ID as combination of train Nr and date
+  trains_va = trains_va %>% mutate(trainID = paste0(AdvertisedTrainIdent, Date)) %>% dplyr::select(trainID, ArrivalDelay, PlannedArrivalTime)
+  
+    # join trains in växjö with connections from alvesta by ID
+  connected_trains = connections_av_from_lp %>% inner_join(trains_va,join_by(dep.trainID == trainID))
+  
+  # select the minimum actual arrival delay of each group as the transfer that "made it" for that group and select explaining variables
+  delays = connected_trains %>% select(arr.Weekday, arr.TimeOfDay,ArrivalDelay, dep.line.name, dep.Operator)
+  
+  # mutate transfer time and week day into correct format
+  delays$arr.Weekday = factor(delays$arr.Weekday, ordered = FALSE )
+  delays$ArrivalDelay = as.numeric(delays$ArrivalDelay)
+  delays$dep.line.name = as.factor(delays$dep.line.name)
+  delays$dep.Operator = as.factor(delays$dep.Operator)
+  return(delays)
+}
+
 load_data_classification = function(){
   # Load first train data
   connections_av = read.fst("~/Thesis/Data_Niko/2024-01-09-v2/Av/connections.fst")

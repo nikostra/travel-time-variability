@@ -14,84 +14,34 @@ library(rstan)
 library(caret)
 library(brms)
 
-delay_model = readRDS("../../delay_model_lognormal_mixture_mu_sigma.rds")
-connection_model_1 = readRDS("../../connection_model_1_v3_horseshoe.rds")
-connection_model_2 = readRDS("../../connection_model_2_v3_horseshoe.rds")
-connection_model_3 = readRDS("../../connection_model_3_v3_horseshoe.rds")
-connection_model_4 = readRDS("../../connection_model_4_v3_horseshoe.rds")
+delay_model_lognormal_mixture_symmetric_mu_sigma = readRDS("delay_model_lognormal_mixture_mu_sigma.rds")
+delay_model_lognormal_mixture_symmetric_mu_theta = readRDS("delay_model_lognormal_mixture_mu_theta.rds")
+delay_model_lognormal_mixture_symmetric_mu = readRDS("delay_model_lognormal_mixture.rds")
 
-# Scale Transfer time
-connections = load_data_classification_v2()
+connection_model_1 = readRDS("connection_model_1_v3_horseshoe.rds")
+connection_model_2 = readRDS("connection_model_2_v3_horseshoe.rds")
+connection_model_3 = readRDS("connection_model_3_v3_horseshoe.rds")
+connection_model_4 = readRDS("connection_model_4_v3_horseshoe.rds")
 
-connections_1 = connections$connections_1
-connections_2 = connections$connections_2
-connections_3 = connections$connections_3
-connections_4 = connections$connections_4
+# constants for scaling transfer time
+m_tt1 = 15.51035
+sd_tt1 = 10.7276
+m_tt2 = 35.71495
+sd_tt2 = 14.10356
+m_tt3 = 46.57676
+sd_tt3 = 12.37518
+m_tt4 = 59.41667
+sd_tt4 = 0.4971671
 
-transfer_time_prescale_1 = connections_1$PlannedTransferTime
-connections_1$PlannedTransferTime = scale(connections_1$PlannedTransferTime)[, 1]
-transfer_time_prescale_2 = connections_2$PlannedTransferTime
-connections_2$PlannedTransferTime = scale(connections_2$PlannedTransferTime)[, 1]
-transfer_time_prescale_3 = connections_3$PlannedTransferTime
-connections_3$PlannedTransferTime = scale(connections_3$PlannedTransferTime)[, 1]
-transfer_time_prescale_4 = connections_4$PlannedTransferTime
-connections_4$PlannedTransferTime = scale(connections_4$PlannedTransferTime)[, 1]
-
-delays = load_delays_all()
-y = delays$ArrivalDelay
-minDelay = min(y) - 1
-
-build_test_sample = function(index) {
-  d = data.frame(weekend = ifelse(input$weekday == "weekend", 1, 0))
-  d$arr.WeekendTRUE = d$weekend
-  
-  #time of day
-  d$time_morning = ifelse(input$time == "morning", 1, 0)
-  d$time_mid_day = ifelse(time == "mid_day", 1, 0)
-  d$time_afternoon = ifelse(time == "afternoon", 1, 0)
-  d$arr.TimeOfDay.afternoon..14.18. = d$time_afternoon
-  d$time_evening = ifelse(time == "evening", 1, 0)
-  d$time_night = ifelse(time == "night", 1, 0)
-  d$arr.TimeOfDay.evening..18.22. = ifelse(d$time_evening == 1 |
-                                             d$time_night == 1, 1, 0)
-  
-  # transfer time
-  if (index == 1) {
-    d$PlannedTransferTime = scale(
-      input[[paste0("transferTime", index)]],
-      center = mean(transfer_time_prescale_1),
-      scale = sd(transfer_time_prescale_1)
-    )
-  } else if (index == 2) {
-    d$PlannedTransferTime = scale(
-      input[[paste0("transferTime", index)]],
-      center = mean(transfer_time_prescale_2),
-      scale = sd(transfer_time_prescale_2)
-    )
-  } else if (index == 3) {
-    d$PlannedTransferTime = scale(
-      input[[paste0("transferTime", index)]],
-      center = mean(transfer_time_prescale_3),
-      scale = sd(transfer_time_prescale_3)
-    )
-  } else if (index == 4) {
-    d$PlannedTransferTime = scale(
-      input[[paste0("transferTime", index)]],
-      center = mean(transfer_time_prescale_4),
-      scale = sd(transfer_time_prescale_4)
-    )
-    
-  }
-  
-  return(d)
-  
-}
+# constant from current version of load_delays
+minDelay = -6.91666666667
 
 # Define server logic required to draw a histogram
 function(input, output, session) {
   output$input_groups <- renderUI({
     input_list <- lapply(1:input$connections, function(i) {
       tagList(
+        hr(),
         selectInput(
           paste0("line", i),
           label = paste0("Line of train ", i),
@@ -113,7 +63,7 @@ function(input, output, session) {
         numericInput(
           paste0("transferTime", i),
           label = paste0("Transfer time of train ", i),
-          value = 10
+          value = 10 * i
         )
       )
     })
@@ -121,25 +71,16 @@ function(input, output, session) {
   })
   
   
-  output$distPlot <- renderPlot({
-    # generate bins based on input$bins from ui.R
-    x    <- faithful[, 2]
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    
-    # draw the histogram with the specified number of bins
-    hist(
-      x,
-      breaks = bins,
-      col = 'darkgray',
-      border = 'white',
-      xlab = 'Waiting time to next eruption (in mins)',
-      main = 'Histogram of waiting times'
-    )
-    
-  })
-  
   output$delayPlot <- renderPlot({
-    # TODO display warning if incorrect combination is entered (e.g. night and 4 connections)
+    
+    # select the model
+    if(input$model == "Mu+sigma"){
+      delay_model = delay_model_lognormal_mixture_symmetric_mu_sigma
+    } else if (input$model == "Mu+theta"){
+      delay_model = delay_model_lognormal_mixture_symmetric_mu_theta
+    } else if(input$model == "Mu"){
+      delay_model = delay_model_lognormal_mixture_symmetric_mu
+    }
     
     if (input$connections == 1) {
       d = data.frame(irr = 1)
@@ -160,8 +101,8 @@ function(input, output, session) {
       # transfer time
       d$PlannedTransferTime = scale(
         input[[paste0("transferTime", input$connections)]],
-        center = mean(transfer_time_prescale_1),
-        scale = sd(transfer_time_prescale_1)
+        center = m_tt1,
+        scale = sd_tt1
       )
       
       # arrival train characteristics
@@ -220,8 +161,8 @@ function(input, output, session) {
       # transfer time
       d$PlannedTransferTime = scale(
         input[[paste0("transferTime", 1)]],
-        center = mean(transfer_time_prescale_1),
-        scale = sd(transfer_time_prescale_1)
+        center = m_tt1,
+        scale = sd_tt1
       )
       
       # arrival train characteristics
@@ -257,8 +198,8 @@ function(input, output, session) {
       # transfer time
       d2$PlannedTransferTime = scale(
         input[[paste0("transferTime", 2)]],
-        center = mean(transfer_time_prescale_2),
-        scale = sd(transfer_time_prescale_2)
+        center = m_tt2,
+        scale = sd_tt2
       )
       
       # arrival train characteristics
@@ -324,8 +265,8 @@ function(input, output, session) {
       # transfer time
       d$PlannedTransferTime = scale(
         input[[paste0("transferTime", 1)]],
-        center = mean(transfer_time_prescale_1),
-        scale = sd(transfer_time_prescale_1)
+        center = m_tt1,
+        scale = sd_tt1
       )
       
       # arrival train characteristics
@@ -361,8 +302,8 @@ function(input, output, session) {
       # transfer time
       d2$PlannedTransferTime = scale(
         input[[paste0("transferTime", 2)]],
-        center = mean(transfer_time_prescale_2),
-        scale = sd(transfer_time_prescale_2)
+        center = m_tt2,
+        scale = sd_tt2
       )
       
       # arrival train characteristics
@@ -398,8 +339,8 @@ function(input, output, session) {
       # transfer time
       d3$PlannedTransferTime = scale(
         input[[paste0("transferTime", 3)]],
-        center = mean(transfer_time_prescale_3),
-        scale = sd(transfer_time_prescale_3)
+        center = m_tt3,
+        scale = sd_tt3
       )
       
       # arrival train characteristics
@@ -473,8 +414,8 @@ function(input, output, session) {
       # transfer time
       d$PlannedTransferTime = scale(
         input[[paste0("transferTime", 1)]],
-        center = mean(transfer_time_prescale_1),
-        scale = sd(transfer_time_prescale_1)
+        center = m_tt1,
+        scale = sd_tt1
       )
       
       # arrival train characteristics
@@ -510,8 +451,8 @@ function(input, output, session) {
       # transfer time
       d2$PlannedTransferTime = scale(
         input[[paste0("transferTime", 2)]],
-        center = mean(transfer_time_prescale_2),
-        scale = sd(transfer_time_prescale_2)
+        center = m_tt2,
+        scale = sd_tt2
       )
       
       # arrival train characteristics
@@ -547,8 +488,8 @@ function(input, output, session) {
       # transfer time
       d3$PlannedTransferTime = scale(
         input[[paste0("transferTime", 3)]],
-        center = mean(transfer_time_prescale_3),
-        scale = sd(transfer_time_prescale_3)
+        center = m_tt3,
+        scale = sd_tt3
       )
       
       # arrival train characteristics
@@ -584,8 +525,8 @@ function(input, output, session) {
       # transfer time
       d4$PlannedTransferTime = scale(
         input[[paste0("transferTime", 4)]],
-        center = mean(transfer_time_prescale_4),
-        scale = sd(transfer_time_prescale_4)
+        center = m_tt4,
+        scale = sd_tt4
       )
       
       # arrival train characteristics
@@ -644,10 +585,28 @@ function(input, output, session) {
         delay_plot = delay_plot + annotate("text",x=x, label=paste("Connection", i), y=-0.005*i, colour="red")
       }
       delay_plot
-      
     }
     
   })
   
+  output$warnings = renderText({
+    t = ""
+    if(input$connections == 4 & (input$time == "night" | input$time == "afternoon"| input$time == "morning")){
+      t = paste(t,"WARNING: The model for 4 connections is only trained on the time categories mid_day and evening. 
+      The current time setting is not compatible with this model.", sep="\n")
+    }
+    if(input$connections > 2 & (input$arrProduct == "SJ Euronight")){
+      t = paste(t,"WARNING: The models for 3 and 4 connections is not trained on the selected arrival product. 
+                Please choose a different train category.", sep="\n")
+    }
+    if(input$connections == 4){
+      if(input[[paste0("line", 4)]] != "Göteborg - Kalmar" & input[[paste0("line", 4)]] != "Hässleholm - Växjö"){
+        t = paste(t,"WARNING: The model for 4 connections is not trained on the selected train line. 
+        Please choose another train line.", sep="\n")
+      }
+    }
+    
+    t
+  })
   
 }
