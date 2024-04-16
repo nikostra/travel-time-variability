@@ -15,8 +15,8 @@ library(caret)
 library(brms)
 
 delay_model_lognormal_mixture_symmetric_mu_sigma = readRDS("delay_model_lognormal_mixture_mu_sigma.rds")
-delay_model_lognormal_mixture_symmetric_mu_theta = readRDS("delay_model_lognormal_mixture_mu_theta.rds")
-delay_model_lognormal_mixture_symmetric_mu = readRDS("delay_model_lognormal_mixture.rds")
+#delay_model_lognormal_mixture_symmetric_mu_theta = readRDS("delay_model_lognormal_mixture_mu_theta.rds")
+#delay_model_lognormal_mixture_symmetric_mu = readRDS("delay_model_lognormal_mixture.rds")
 
 connection_model_1 = readRDS("connection_model_1_v3_horseshoe.rds")
 connection_model_2 = readRDS("connection_model_2_v3_horseshoe.rds")
@@ -74,13 +74,15 @@ function(input, output, session) {
   output$delayPlot <- renderPlot({
     
     # select the model
-    if(input$model == "Mu+sigma"){
-      delay_model = delay_model_lognormal_mixture_symmetric_mu_sigma
-    } else if (input$model == "Mu+theta"){
-      delay_model = delay_model_lognormal_mixture_symmetric_mu_theta
-    } else if(input$model == "Mu"){
-      delay_model = delay_model_lognormal_mixture_symmetric_mu
-    }
+    # if(input$model == "Mu+sigma"){
+    #   delay_model = delay_model_lognormal_mixture_symmetric_mu_sigma
+    # } else if (input$model == "Mu+theta"){
+    #   delay_model = delay_model_lognormal_mixture_symmetric_mu_theta
+    # } else if(input$model == "Mu"){
+    #   delay_model = delay_model_lognormal_mixture_symmetric_mu
+    # }
+    
+    delay_model = delay_model_lognormal_mixture_symmetric_mu_sigma
     
     if (input$connections == 1) {
       d = data.frame(irr = 1)

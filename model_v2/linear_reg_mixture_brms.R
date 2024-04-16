@@ -85,11 +85,11 @@ psis1 <- loo1$psis_object
 lw <- weights(psis1) # normalized log weights
 
 # Visual check: Look at distribution of posterior predictive of my model vs the actual data set
-pp_check(model)
-pp_check(model, type = "stat_2d", ndraws = 200)
+pp_check(model) + labs(title = "Posterior predictive plot")
+pp_check(model, type = "stat_2d", ndraws = 100)
 
 # Loo
-color_scheme_set("orange")
+#color_scheme_set("orange")
 ppc_loo_pit_overlay(y, yrep, lw = lw)
 
 ppc_loo_pit_qq(y, yrep, lw = lw)
@@ -125,4 +125,5 @@ for (i in 1:8) {
   hist(pred_draws[,i] + minDelay, main=paste("Histogram of Column", i), xlab="Value", breaks = 30)
   print(ks.test(pred_draws[,i] + minDelay,delays$ArrivalDelay))
 }
+
 hist(delays$ArrivalDelay, main="Histogram of sample", xlab="Value", breaks = 30)

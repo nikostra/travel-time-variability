@@ -197,3 +197,16 @@ ggplot(delays, aes(x=dep.line.name, y=ArrivalDelay, fill=dep.line.name)) +
   scale_y_continuous(limits = c(-5, 10)) + theme(text = element_text(size=15))
 
 
+# comparison of posterior predictive checks
+library(gridExtra)
+library(bayesplot)
+
+model1 = delay_model_no_mixture
+model2 = delay_model_lognormal_mixture_symmetric_mu_sigma
+
+plot1 = pp_check(model1, size=1) + xlim(c(0,100)) + xlab("1 component model") + ylab("Density") + 
+  labs(title = "Posterior predictive plot of model with one component vs. mixture model with 2 components")
+plot2 = pp_check(model2, size=1) + xlim(c(0,100)) + xlab("2 component model") + 
+  labs(title="")
+grid.arrange(plot1, plot2, ncol=2)
+

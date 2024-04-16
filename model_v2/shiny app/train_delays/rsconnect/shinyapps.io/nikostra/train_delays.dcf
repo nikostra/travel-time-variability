@@ -5,6 +5,8 @@ account: nikostra
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 11760828
-bundleId:
+bundleId: 8496309
 url: https://nikostra.shinyapps.io/train_delays/
 version: 1
+asMultiple: FALSE
+asStatic: FALSE

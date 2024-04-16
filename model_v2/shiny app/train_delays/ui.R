@@ -18,18 +18,18 @@ fluidPage(
     # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
-          selectInput(
-            "model",
-            "Choose a model",
-            c("Mu+sigma","Mu","Mu+theta"),
-            selected = NULL,
-            multiple = FALSE,
-            selectize = TRUE,
-            width = NULL,
-            size = NULL
-          ),
-          
-          hr(),
+          # selectInput(
+          #   "model",
+          #   "Choose a model",
+          #   c("Mu+sigma","Mu","Mu+theta"),
+          #   selected = NULL,
+          #   multiple = FALSE,
+          #   selectize = TRUE,
+          #   width = NULL,
+          #   size = NULL
+          # ),
+          # 
+          # hr(),
           
           selectInput(
             "weekday",
