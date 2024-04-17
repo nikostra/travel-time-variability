@@ -86,7 +86,7 @@ lw <- weights(psis1) # normalized log weights
 
 # Visual check: Look at distribution of posterior predictive of my model vs the actual data set
 pp_check(model) + labs(title = "Posterior predictive plot")
-pp_check(model, type = "stat_2d", ndraws = 100)
+pp_check(model, type = "stat_2d", ndraws = 200)
 
 # Loo
 #color_scheme_set("orange")
