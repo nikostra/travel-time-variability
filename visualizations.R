@@ -210,3 +210,11 @@ plot2 = pp_check(model2, size=1) + xlim(c(0,100)) + xlab("2 component model") +
   labs(title="")
 grid.arrange(plot1, plot2, ncol=2)
 
+
+# comparison of posterior predictive samples between lines
+
+plot1 = ggplot(data.frame(delay=test_delays[,19]),aes(x=delay)) + geom_density(lwd = 1) + 
+  xlab("Arrival Delay (HM-VÖ line)") + ylab("Density")
+plot2 = ggplot(data.frame(delay=test_delays[,20]),aes(x=delay)) + geom_density(lwd = 1) + 
+  xlab("Arrival Delay (G-KAC line)") + ylab("Density")
+grid.arrange(plot1, plot2, ncol=2)
