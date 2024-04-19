@@ -254,13 +254,16 @@ test_data = function(nr_connections,transfer_times,
   d$dep.ProductName.SJ.Regional = ifelse(dep.ProductName == "SJ Regional",1,0) 
   d$dep.ProductName.Öresundståg = ifelse(dep.ProductName == "Öresundståg",1,0) 
   d$dep.line.name.G...KAC = ifelse(dep.line.name == "G...KAC",1,0)
+  d$dep.line.name.V...VÖ.AV = ifelse(dep.line.name == "V...VÖ.AV",1,0)
+  d$dep.line.name.JÖ.N...VÖ.AV = ifelse(dep.line.name == "JÖ.N...VÖ.AV",1,0)
+  d$dep.line.name.HM...VÖ.AV = ifelse(dep.line.name == "HM...VÖ.AV",1,0)
   return(d)
 }
 
 # input test parameters here
-test_connection_times = c(10,20,50, 60)
+test_connection_times = c(10,20,30)
 test_sample = test_data(nr_connections = length(test_connection_times),transfer_times = test_connection_times,
-                        weekend_var = 0, weekday = 4, time = 4, dep.Operator = "SJ", dep.line.name = "G...KAC")
+                        weekend_var = 0, weekday = 4, time = 5, dep.Operator = "SJ")
 
 # get probabilities for each connection
 preds_1 = posterior_predict(connection_model_1,test_sample[1,] %>% rename(PlannedTransferTime = PlannedTransferTime_1))
@@ -300,13 +303,18 @@ for (i in 1:length(test_delays)) {
 
 hist(test_delays, breaks = 100)
 delay_plot = ggplot(data.frame(delay=test_delays),aes(x=delay)) + geom_density(lwd = 1) + 
-  xlab("Arrival Delay in Växjö") + ylab("Density")
+  xlab("Arrival Delay in Växjö (Night)") + ylab("Density")
 for (i in 1:length(test_connection_times)) {
   x = test_connection_times[i] - test_connection_times[1]
   delay_plot = delay_plot + geom_vline(xintercept = x, linetype="dashed", color = "red")
   delay_plot = delay_plot + annotate("text",x=x, label=paste("Connection", i), y=-0.005*i, colour="red")
 }
 delay_plot
+
+delay_plot2 = delay_plot2 + xlab("Arrival Delay in Växjö (Afternoon)")
+
+library(gridExtra)
+grid.arrange(delay_plot,delay_plot2,ncol=2)
 
 print(paste0(sum(is.na(test_delays))/length(test_delays) * 100 , "% of travelers missed all connections"))
 

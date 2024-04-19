@@ -17,6 +17,7 @@ test_samples = test_data %>% filter(arr.ActivityId %in% sampled_groups)
 
 ### prepare models
 
+delay_model = readRDS("model_v2/delay_model_lognormal_mixture.rds")
 delay_model = readRDS("model_v2/delay_model_lognormal_mixture_mu_sigma.rds")
 connection_model_1 = readRDS("model_v2/connection_model_1_v3_horseshoe.rds")
 connection_model_2 = readRDS("model_v2/connection_model_2_v3_horseshoe.rds")
