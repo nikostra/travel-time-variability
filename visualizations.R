@@ -34,9 +34,9 @@ dat = data.frame(Time = factor(c("Morning (5-9)", "Mid Day (9-14)", "Afternoon (
                  value = c(m1,m2,m3,m4,m5))
 ggplot(dat, aes(x = Time, y = value)) +
   geom_bar(stat = "identity") +
-  labs(title = "Connection Reliability per time of day", x = "Time", y = "Connection Reliability") +
-  theme_minimal()
-
+  scale_y_continuous(limits = c(0,1)) +
+  theme(text = element_text(size=15)) +
+  labs(title = "Connection Reliability per time of day", x = "Time", y = "Connection Reliability")
 # connection reliability per transfer time interval
 
 c = load_data_classification()
@@ -50,9 +50,9 @@ dat = data.frame(transferTime = factor(c("0 - 15 min", "16 - 30 min", "31 - 45 m
                  value = c(m1,m2,m3,m4))
 ggplot(dat, aes(x = transferTime, y = value)) +
   geom_bar(stat = "identity") +
-  labs(title = "Connection Reliability per planned transfer time", x = "Planned Transfer Time", y = "Connection Reliability") +
-  theme_minimal()
-
+  scale_y_continuous(limits = c(0,1)) +
+  theme(text = element_text(size=15)) +
+  labs(title = "Connection Reliability per planned transfer time", x = "Planned Transfer Time", y = "Connection Reliability")
 
 # count how many connections there are for trains arriving in Alvesta
 # needs connections_av_from_lp from load_data_all() function
@@ -195,6 +195,21 @@ ggplot(delays, aes(x=dep.line.name, y=ArrivalDelay, fill=dep.line.name)) +
   geom_boxplot(outlier.shape = NA) +
   labs(title="Box Plot of arrival delays in Växjö by line", x="Line", y="Arrival Delay") +
   scale_y_continuous(limits = c(-5, 10)) + theme(text = element_text(size=15))
+
+p <- ggplot(delays, aes(x=dep.line.name, y=ArrivalDelay, fill=dep.line.name)) +
+  geom_boxplot(outlier.shape = NA) +
+  labs(title="Box Plot of arrival delays in Växjö by line", x="Line", y="Arrival Delay") +
+  scale_y_continuous(limits = c(-5, 10)) +
+  theme(text = element_text(size=15))
+
+# Extract outlier information
+p_data <- ggplot_build(p)$data
+
+# Count outliers for each group
+outliers_count <- lapply(p_data, function(x) sum(!is.na(x$outlier)))
+
+# Print the count of outliers for each group
+print(outliers_count)
 
 
 # comparison of posterior predictive checks
