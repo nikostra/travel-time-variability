@@ -7,14 +7,6 @@ library(gridExtra)
 ### load test data and prepare samples
 test_data = load_test_data() %>% ungroup()
 
-set.seed(10)
-sampled_groups <- test_data %>%
-  distinct(arr.ActivityId) %>% pull(arr.ActivityId) %>%
-  sample(size = 15)
-
-test_samples = test_data %>% filter(arr.ActivityId %in% sampled_groups)
-
-
 ### prepare models
 
 delay_model = readRDS("model_v2/delay_model_lognormal_mixture.rds")
@@ -47,6 +39,15 @@ minDelay = min(y) - 1
 
 
 ### Prepare test delays and sample from the models
+
+# 99 is ok
+set.seed(1234)
+sampled_groups <- test_data %>%
+  distinct(arr.ActivityId) %>% pull(arr.ActivityId) %>%
+  sample(size = 15)
+
+test_samples = test_data %>% filter(arr.ActivityId %in% sampled_groups)
+
 x = test_samples %>% mutate(arr.Weekend = (arr.Weekday == "Sat" |
                                              arr.Weekday == "Sun"))
 dmy <-
@@ -221,19 +222,27 @@ for (g_id in 1:max(x_connections$group_id)) {
     }
   }
   
+  missed_ratio = sum(is.na(predicted_group_delay))/length(predicted_group_delay)
+  
+  
   delay_plot = ggplot(data.frame(delay=predicted_group_delay),aes(x=delay)) + geom_density(lwd = 1) + 
-    xlab("Arrival Delay in Växjö") + ylab("Density")
+    labs(x=NULL) + ylab("Density")
+  if(g_id %in% c(13,14,15)){
+    delay_plot = delay_plot + xlab("Arrival Delay in Växjö")
+  }
+  if(!is.na(actual_delay)){
+    delay_plot = delay_plot + annotate("point", x = actual_delay, y = 0, size = 4)
+  }
+  plot_title = bquote(p[miss] ~ "(" ~ .(missed_ratio) * ")")
+  delay_plot = delay_plot + ggtitle(plot_title) +
+    theme(theme(text = element_text(size=15)))
   for (i in 1:nrow(group)) {
     x = group$PlannedTransferTime[i] - group$PlannedTransferTime[1]
     #delay_plot = delay_plot + geom_vline(xintercept = x, linetype="dashed", color = "red")
     #delay_plot = delay_plot + annotate("text",x=x, label=paste("Connection", i), y=-0.005*i, colour="red")
-    if(!is.na(actual_delay)){
-      delay_plot = delay_plot + annotate("point", x = actual_delay, y = 0, size = 4)
-    }
   }
   
-  missed_ratio = sum(is.na(predicted_group_delay))/length(predicted_group_delay)
-  
+
   info = list(missed_ratio = missed_ratio, actual_delay = actual_delay)
   pred_info[[g_id]] = info
   plot_list[[g_id]] = delay_plot
