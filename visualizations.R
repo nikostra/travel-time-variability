@@ -219,10 +219,12 @@ library(bayesplot)
 model1 = delay_model_no_mixture
 model2 = delay_model_lognormal_mixture_symmetric_mu_sigma
 
-plot1 = pp_check(model1, size=1) + xlim(c(0,100)) + xlab("1 component model") + ylab("Density") + 
-  labs(title = "Posterior predictive plot of model with one component vs. mixture model with 2 components")
-plot2 = pp_check(model2, size=1) + xlim(c(0,100)) + xlab("2 component model") + 
-  labs(title="")
+plot1 = pp_check(model1, size=1) + xlab("1 component model") + ylab("Density") + 
+  xlim(c(0,25)) + theme(text = element_text(size=15))
+
+plot2 = pp_check(model2, size=1) + xlab("2 component model") + xlim(c(0,25)) + 
+  theme(text = element_text(size=15))
+
 grid.arrange(plot1, plot2, ncol=2)
 
 
@@ -233,3 +235,23 @@ plot1 = ggplot(data.frame(delay=test_delays[,19]),aes(x=delay)) + geom_density(l
 plot2 = ggplot(data.frame(delay=test_delays[,20]),aes(x=delay)) + geom_density(lwd = 1) + 
   xlab("Arrival Delay (G-KAC line)") + ylab("Density")
 grid.arrange(plot1, plot2, ncol=2)
+
+
+
+### table for times
+delays = load_delays_all()
+
+x = delays %>% mutate(arr.Weekend = (arr.Weekday == "Sat" | arr.Weekday == "Sun"))
+dmy <- dummyVars(" ~ .", data = x %>% select(arr.Weekday, arr.TimeOfDay, arr.Weekend, dep.line.name, dep.Operator, ArrivalDelay))
+x <- data.frame(predict(dmy, newdata = x))
+
+x = x %>% mutate(arr.TimeOfDay.evening..18.22. = ifelse(arr.TimeOfDay.evening..18.22. == 1 | arr.TimeOfDay.night..22.5. == 1, 1,0))
+x = x %>% mutate(arr.TimeOfDay.mid.day..9.14. = ifelse(arr.TimeOfDay.mid.day..9.14. == 1 | arr.TimeOfDay.morning..5.9. == 1, 1,0))
+
+morning = x %>% filter(arr.TimeOfDay.mid.day..9.14. == 1)
+afternoon = x %>% filter(arr.TimeOfDay.afternoon..14.18. == 1)
+evening = x %>% filter(arr.TimeOfDay.evening..18.22. == 1)
+
+summary(morning$ArrivalDelay)
+summary(afternoon$ArrivalDelay)
+summary(evening$ArrivalDelay)

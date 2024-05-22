@@ -227,15 +227,15 @@ for (g_id in 1:max(x_connections$group_id)) {
   
   delay_plot = ggplot(data.frame(delay=predicted_group_delay),aes(x=delay)) + geom_density(lwd = 1) + 
     labs(x=NULL) + ylab("Density")
-  if(g_id %in% c(13,14,15)){
-    delay_plot = delay_plot + xlab("Arrival Delay in Växjö")
-  }
   if(!is.na(actual_delay)){
     delay_plot = delay_plot + annotate("point", x = actual_delay, y = 0, size = 4)
   }
   plot_title = bquote(p[miss] ~ "(" ~ .(missed_ratio) * ")")
   delay_plot = delay_plot + ggtitle(plot_title) +
-    theme(theme(text = element_text(size=15)))
+    theme(text = element_text(size=12))
+  if(g_id %in% c(13,14,15)){
+    delay_plot = delay_plot + xlab("Arrival Delay in Växjö")
+  }
   for (i in 1:nrow(group)) {
     x = group$PlannedTransferTime[i] - group$PlannedTransferTime[1]
     #delay_plot = delay_plot + geom_vline(xintercept = x, linetype="dashed", color = "red")
